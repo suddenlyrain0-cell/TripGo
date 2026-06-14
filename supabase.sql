@@ -56,6 +56,7 @@ alter table place_comments enable row level security;
 create policy "public read rooms" on rooms for select using (true);
 create policy "public insert rooms" on rooms for insert with check (true);
 create policy "public update rooms" on rooms for update using (true) with check (true);
+create policy "public delete rooms" on rooms for delete using (true);
 create policy "public read members" on room_members for select using (true);
 create policy "public insert members" on room_members for insert with check (true);
 create policy "public delete members" on room_members for delete using (true);

@@ -1,13 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Crown, Image, LocateFixed, LogOut, MapPin, MessageCircle, PanelRightClose, Plus, Search, Send, UserMinus, Users, X } from 'lucide-react'
-import { supabase } from './supabase'
+import { Crown, Image, LocateFixed, LogOut, MapPin, MessageCircle, PanelRightClose, Plus, Search, Send, Trash2, UserMinus, Users, X } from 'lucide-react'
+import { isSupabaseConfigured, supabase } from './supabase'
 import './style.css'
 
 const TAGS = ['관광', '식당', '숙소', '카페', '기타']
 const MAX_NAME_LENGTH = 10
 const MIN_LOADING_MS = 700
+const AUTH_STORAGE_KEY = 'trip_auth_user'
+const ROOM_SESSION_STORAGE_KEY = 'trip_room_session'
 const BLOCKED_WORDS = ['시발', '씨발', '병신', '좆', '개새끼', 'fuck', 'shit']
+
+function safeParseJson(value) {
+  try {
+    return value ? JSON.parse(value) : null
+  } catch {
+    return null
+  }
+}
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -31,6 +41,32 @@ function validateDisplayName(value, label) {
   return ''
 }
 
+function getProviderLabel(provider) {
+  if (provider === 'kakao') return '카카오'
+  if (provider === 'google') return '구글'
+  if (provider === 'guest') return '게스트'
+  return '로그인'
+}
+
+function normalizeDisplayName(value, fallback) {
+  const compact = String(value || '').trim()
+  return (compact || fallback).slice(0, MAX_NAME_LENGTH)
+}
+
+function buildOAuthUser(authSession) {
+  const user = authSession?.user
+  if (!user) return null
+  const metadata = user.user_metadata || {}
+  const provider = user.app_metadata?.provider || metadata.provider || 'google'
+  const emailName = user.email?.split('@')[0]
+  return {
+    id: user.id,
+    provider,
+    displayName: normalizeDisplayName(metadata.full_name || metadata.name || metadata.nickname || metadata.user_name || emailName, `${getProviderLabel(provider)} 사용자`),
+    isGuest: false
+  }
+}
+
 function loadKakaoMap() {
   return new Promise((resolve, reject) => {
     if (window.kakao?.maps) return resolve(window.kakao)
@@ -45,16 +81,190 @@ function loadKakaoMap() {
 }
 
 function App() {
-  const savedSession = JSON.parse(localStorage.getItem('trip_room_session') || 'null')
+  const savedSession = safeParseJson(localStorage.getItem(ROOM_SESSION_STORAGE_KEY))
+  const savedAuthUser = safeParseJson(localStorage.getItem(AUTH_STORAGE_KEY))
+  const [authUser, setAuthUser] = useState(savedAuthUser)
+  const [authLoading, setAuthLoading] = useState(true)
   const [session, setSession] = useState(savedSession)
   const showLanding = false
   const [landingOpen, setLandingOpen] = useState(() => showLanding && sessionStorage.getItem('trip_room_landing_seen') !== 'true')
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setAuthLoading(false)
+      return
+    }
+
+    let mounted = true
+
+    async function loadAuthUser() {
+      const { data } = await supabase.auth.getSession()
+      if (!mounted) return
+
+      const oauthUser = buildOAuthUser(data?.session)
+      const storedUser = safeParseJson(localStorage.getItem(AUTH_STORAGE_KEY))
+      const nextUser = oauthUser || (storedUser?.isGuest ? storedUser : null)
+
+      if (nextUser) {
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextUser))
+      } else {
+        localStorage.removeItem(AUTH_STORAGE_KEY)
+        localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
+        setSession(null)
+      }
+
+      setAuthUser(nextUser)
+      setAuthLoading(false)
+    }
+
+    loadAuthUser()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      const nextUser = buildOAuthUser(nextSession)
+      if (!nextUser) {
+        const storedUser = safeParseJson(localStorage.getItem(AUTH_STORAGE_KEY))
+        if (storedUser?.isGuest) return
+        localStorage.removeItem(AUTH_STORAGE_KEY)
+        localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
+        setAuthUser(null)
+        setSession(null)
+        return
+      }
+
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextUser))
+      setAuthUser(nextUser)
+    })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!authUser || !session?.authId || session.authId === authUser.id) return
+    localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
+    setSession(null)
+  }, [authUser, session?.authId])
+
   function startService() {
     sessionStorage.setItem('trip_room_landing_seen', 'true')
     setLandingOpen(false)
   }
+
+  async function handleOAuthLogin(provider) {
+    localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
+    setSession(null)
+    const options = { redirectTo: window.location.origin }
+    if (provider === 'kakao') {
+      options.scopes = 'profile_nickname,profile_image'
+      options.queryParams = { scope: 'profile_nickname,profile_image' }
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options
+    })
+    if (error) throw error
+  }
+
+  function handleGuestLogin(username) {
+    const nextUser = {
+      id: `guest-${Date.now()}`,
+      provider: 'guest',
+      displayName: username,
+      isGuest: true
+    }
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextUser))
+    localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
+    setAuthUser(nextUser)
+    setSession(null)
+  }
+
+  async function handleLogout() {
+    if (authUser && !authUser.isGuest) {
+      await supabase.auth.signOut()
+    }
+    localStorage.removeItem(AUTH_STORAGE_KEY)
+    localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
+    setAuthUser(null)
+    setSession(null)
+  }
+
+  if (!isSupabaseConfigured) return <SetupRequired />
+  if (authLoading) return <div className="lobby authLobby"><div className="loadingOverlay inlineLoading"><div className="spinner" /><b>로그인 확인 중...</b></div></div>
   if (landingOpen) return <Landing onStart={startService} />
-  return session ? <Room session={session} setSession={setSession} /> : <Lobby setSession={setSession} />
+  if (!authUser) return <AuthScreen onOAuthLogin={handleOAuthLogin} onGuestLogin={handleGuestLogin} />
+  return session
+    ? <Room session={session} setSession={setSession} authUser={authUser} onLogout={handleLogout} />
+    : <Lobby setSession={setSession} authUser={authUser} onLogout={handleLogout} />
+}
+
+function SetupRequired() {
+  return <div className="lobby authLobby">
+    <div className="card setupCard">
+      <div className="appMark"><MapPin size={22} /></div>
+      <h1>설정이 필요해요</h1>
+      <p>Supabase 환경변수가 없어서 앱을 시작하지 못했어요. 프로젝트 루트에 <b>.env</b> 파일을 만들고 아래 값을 채워주세요.</p>
+      <pre>{`VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_KAKAO_MAP_KEY=your_kakao_javascript_key`}</pre>
+      <div className="setupHint">저장한 뒤 dev server를 다시 실행하면 로그인 화면이 나옵니다.</div>
+    </div>
+  </div>
+}
+
+function AuthScreen({ onOAuthLogin, onGuestLogin }) {
+  const [guestName, setGuestName] = useState('')
+  const [error, setError] = useState('')
+  const [loadingProvider, setLoadingProvider] = useState('')
+  const isLoading = Boolean(loadingProvider)
+
+  async function loginWithProvider(provider) {
+    setError('')
+    setLoadingProvider(provider)
+    try {
+      await onOAuthLogin(provider)
+    } catch (error) {
+      setError(error.message || '로그인을 시작하지 못했어요.')
+      setLoadingProvider('')
+    }
+  }
+
+  function loginAsGuest() {
+    const trimmed = guestName.trim()
+    const nameError = validateDisplayName(trimmed, '게스트 이름')
+    if (nameError) return setError(nameError)
+    setError('')
+    onGuestLogin(trimmed)
+  }
+
+  return <div className="lobby authLobby">
+    <div className="card authCard">
+      <div className="appMark"><MapPin size={22} /></div>
+      <h1>어디가지</h1>
+      <p>로그인하고 여행 방에 참여하세요.</p>
+      <div className="authActions">
+        <button className="oauthButton kakao" disabled={isLoading} onClick={() => loginWithProvider('kakao')}>
+          <b>K</b>
+          <span>{loadingProvider === 'kakao' ? '카카오 연결 중...' : '카카오 로그인'}</span>
+        </button>
+        <button className="oauthButton google" disabled={isLoading} onClick={() => loginWithProvider('google')}>
+          <b>G</b>
+          <span>{loadingProvider === 'google' ? '구글 연결 중...' : '구글 로그인'}</span>
+        </button>
+      </div>
+      <div className="guestPanel">
+        <div className="guestPanelHead">
+          <b>게스트 로그인</b>
+          <span>참가 전용</span>
+        </div>
+        <div className="guestInlineForm">
+          <input maxLength={MAX_NAME_LENGTH} placeholder="게스트 이름" value={guestName} onChange={e => setGuestName(e.target.value)} onKeyDown={e => e.key === 'Enter' && loginAsGuest()} />
+          <button onClick={loginAsGuest} disabled={isLoading}>입장</button>
+        </div>
+      </div>
+      {error && <div className="error">{error}</div>}
+    </div>
+  </div>
 }
 
 function Landing({ onStart }) {
@@ -156,10 +366,11 @@ function Landing({ onStart }) {
   </main>
 }
 
-function Lobby({ setSession }) {
+function Lobby({ setSession, authUser, onLogout }) {
+  const isGuest = authUser?.isGuest
   const [mode, setMode] = useState('find')
   const [rooms, setRooms] = useState([])
-  const [form, setForm] = useState({ roomName: '', password: '', username: '' })
+  const [form, setForm] = useState({ roomName: '', password: '', username: authUser?.displayName || '' })
   const [roomQuery, setRoomQuery] = useState('')
   const [selectedRoom, setSelectedRoom] = useState(null)
   const [error, setError] = useState('')
@@ -167,6 +378,17 @@ function Lobby({ setSession }) {
   const lobbyMapRef = useRef(null)
 
   useEffect(() => { fetchRooms() }, [])
+
+  useEffect(() => {
+    setForm(prev => prev.username ? prev : { ...prev, username: authUser?.displayName || '' })
+  }, [authUser?.displayName])
+
+  useEffect(() => {
+    if (isGuest && mode === 'create') {
+      setMode('find')
+      setError('게스트는 방 만들기를 할 수 없어요. 방 찾기로 참여해주세요.')
+    }
+  }, [isGuest, mode])
 
   useEffect(() => {
     loadKakaoMap().then(kakao => {
@@ -194,8 +416,8 @@ function Lobby({ setSession }) {
     setLoading(true)
     try {
       await withMinimumLoading(() => supabase.from('room_members').upsert({ room_id: room.id, username: form.username.trim() }, { onConflict: 'room_id,username' }))
-      const next = { roomId: room.id, roomName: room.name, username: form.username.trim() }
-      localStorage.setItem('trip_room_session', JSON.stringify(next))
+      const next = { roomId: room.id, roomName: room.name, username: form.username.trim(), authId: authUser.id, provider: authUser.provider, isGuest }
+      localStorage.setItem(ROOM_SESSION_STORAGE_KEY, JSON.stringify(next))
       setSession(next)
     } catch (error) {
       setError(error.message || '입장 중 문제가 발생했습니다.')
@@ -205,6 +427,7 @@ function Lobby({ setSession }) {
 
   async function createRoom() {
     setError('')
+    if (isGuest) return setError('게스트는 방 만들기를 할 수 없어요. 방 찾기로 참여해주세요.')
     if (!form.roomName.trim() || !form.password.trim() || !form.username.trim()) return setError('방 이름, 비밀번호, 사용자 이름을 모두 입력해주세요.')
     const roomNameError = validateDisplayName(form.roomName, '방 이름')
     const usernameError = validateDisplayName(form.username, '사용자 이름')
@@ -222,17 +445,29 @@ function Lobby({ setSession }) {
   const filteredRooms = rooms
     .filter(room => room.name.toLowerCase().includes(roomQuery.trim().toLowerCase()))
     .slice(0, 5)
+  const primaryDisabled = loading || (mode === 'find' && !selectedRoom) || (mode === 'create' && isGuest)
 
   return <div className="lobby">
     <div ref={lobbyMapRef} className="lobbyMap" aria-hidden="true" />
     <div className="card">
-      <div className="appMark"><MapPin size={22} /></div>
+      <div className="cardTop">
+        <div className="appMark"><MapPin size={22} /></div>
+        <div className="sessionPill">
+          <span>{authUser.displayName.slice(0, 1)}</span>
+          <div>
+            <b>{authUser.displayName}</b>
+            <small>{getProviderLabel(authUser.provider)} 로그인</small>
+          </div>
+        </div>
+        <button className="iconButton logoutButton" onClick={onLogout} title="로그아웃"><LogOut size={19} /></button>
+      </div>
       <h1>어디가지</h1>
       <p>친구들과 함께 여행 장소를 지도에 모으고, 실시간으로 공유하는 협업 여행 지도 서비스</p>
       <div className="tabs" role="tablist">
         <button className={mode === 'find' ? 'active' : ''} onClick={() => { setMode('find'); setError('') }}>방 찾기</button>
-        <button className={mode === 'create' ? 'active' : ''} onClick={() => { setMode('create'); setError('') }}>방 만들기</button>
+        <button className={mode === 'create' ? 'active' : ''} disabled={isGuest} onClick={() => { setMode('create'); setError('') }}>방 만들기</button>
       </div>
+      {isGuest && <div className="guestNotice">게스트는 방 참가만 가능해요.</div>}
       <div className="formStack">
         {mode === 'create' && <label><span>방 이름</span><input maxLength={MAX_NAME_LENGTH} placeholder="예: 부산 어디가지" value={form.roomName} onChange={e => setForm({ ...form, roomName: e.target.value })} /></label>}
         {mode === 'find' && <div className="roomSearchBlock">
@@ -251,13 +486,14 @@ function Lobby({ setSession }) {
         <label><span>방 비밀번호</span><input placeholder="비밀번호" type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></label>
       </div>
       {error && <div className="error">{error}</div>}
-      <button className="primary" disabled={loading} onClick={() => mode === 'create' ? createRoom() : selectedRoom && enterRoom(selectedRoom)}>{loading ? '준비 중...' : mode === 'create' ? '방 만들고 입장' : '입장하기'}</button>
+      <button className="primary" disabled={primaryDisabled} onClick={() => mode === 'create' ? createRoom() : selectedRoom && enterRoom(selectedRoom)}>{loading ? '준비 중...' : mode === 'create' ? '방 만들고 입장' : '입장하기'}</button>
     </div>
     {loading && <div className="loadingOverlay"><div className="spinner" /><b>{mode === 'create' ? '방을 만들고 있어요' : '방에 입장하고 있어요'}</b></div>}
   </div>
 }
 
-function Room({ session, setSession }) {
+function Room({ session, setSession, authUser, onLogout }) {
+  const isGuest = authUser?.isGuest || session.isGuest
   const [messages, setMessages] = useState([])
   const [members, setMembers] = useState([])
   const [places, setPlaces] = useState([])
@@ -268,6 +504,7 @@ function Room({ session, setSession }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [membersOpen, setMembersOpen] = useState(false)
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [chatWidth, setChatWidth] = useState(380)
   const [roomManagerOpen, setRoomManagerOpen] = useState(false)
   const [roomMode, setRoomMode] = useState('find')
@@ -336,7 +573,25 @@ function Room({ session, setSession }) {
         setPlaceComments(prev => prev.some(comment => comment.id === payload.new.id) ? prev : [...prev, payload.new])
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'room_members', filter: `room_id=eq.${session.roomId}` }, loadMembers)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${session.roomId}` }, payload => setRoomInfo(payload.new || { owner: '' }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${session.roomId}` }, async payload => {
+        if (payload.eventType === 'DELETE') {
+          const nextRooms = await loadAvailableJoinedRooms(session.roomId)
+          if (nextRooms.length > 0) {
+            const nextRoom = nextRooms[0]
+            const next = { ...session, roomId: nextRoom.id, roomName: nextRoom.name }
+            localStorage.setItem(ROOM_SESSION_STORAGE_KEY, JSON.stringify(next))
+            setJoinedRooms(nextRooms)
+            setMobileView('map')
+            setSession(next)
+            return
+          }
+
+          localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
+          setSession(null)
+          return
+        }
+        setRoomInfo(payload.new || { owner: '' })
+      })
       .subscribe()
     return () => supabase.removeChannel(channel)
   }, [session.roomId, session.username])
@@ -484,6 +739,26 @@ function Room({ session, setSession }) {
     setJoinedRooms(rooms)
   }
 
+  async function loadAvailableJoinedRooms(excludedRoomId = session.roomId) {
+    const { data: memberships } = await supabase
+      .from('room_members')
+      .select('room_id, created_at')
+      .eq('username', session.username)
+      .neq('room_id', excludedRoomId)
+      .order('created_at', { ascending: false })
+
+    const roomIds = [...new Set((memberships || []).map(item => item.room_id).filter(Boolean))]
+    if (roomIds.length === 0) return []
+
+    const { data } = await supabase
+      .from('rooms')
+      .select('*')
+      .in('id', roomIds)
+
+    const roomById = new Map((data || []).map(room => [room.id, room]))
+    return roomIds.map(id => roomById.get(id)).filter(Boolean)
+  }
+
   function rememberJoinedRoom(room) {
     setJoinedRooms(prev => {
       const nextRoom = {
@@ -505,7 +780,7 @@ function Room({ session, setSession }) {
   async function loadMembers() {
     const { data } = await supabase.from('room_members').select('*').eq('room_id', session.roomId).order('created_at')
     if ((data || []).length > 0 && !(data || []).some(member => member.username === session.username)) {
-      localStorage.removeItem('trip_room_session')
+      localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
       setSession(null)
       return
     }
@@ -515,7 +790,7 @@ function Room({ session, setSession }) {
   function switchRoom(room) {
     if (room.id === session.roomId) return
     const next = { ...session, roomId: room.id, roomName: room.name }
-    localStorage.setItem('trip_room_session', JSON.stringify(next))
+    localStorage.setItem(ROOM_SESSION_STORAGE_KEY, JSON.stringify(next))
     setMobileView('map')
     setSession(next)
   }
@@ -549,6 +824,7 @@ function Room({ session, setSession }) {
 
   function openRoomManager() {
     setRoomManagerOpen(true)
+    setRoomMode('find')
     setRoomError('')
     setRoomQuery('')
     setSelectedJoinRoom(null)
@@ -575,6 +851,7 @@ function Room({ session, setSession }) {
 
   async function createRoomFromManager() {
     setRoomError('')
+    if (isGuest) return setRoomError('게스트는 방 만들기를 할 수 없어요. 방 찾기로 참여해주세요.')
     if (!roomForm.roomName.trim() || !roomForm.password.trim()) return setRoomError('방 이름과 비밀번호를 입력해주세요.')
     const roomNameError = validateDisplayName(roomForm.roomName, '방 이름')
     if (roomNameError) return setRoomError(roomNameError)
@@ -799,7 +1076,37 @@ function Room({ session, setSession }) {
 
   async function leaveRoom() {
     await supabase.from('room_members').delete().eq('room_id', session.roomId).eq('username', session.username)
-    localStorage.removeItem('trip_room_session')
+    localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
+    setSession(null)
+  }
+
+  async function deleteRoom() {
+    if (!isOwner) return
+    const { data, error } = await supabase
+      .from('rooms')
+      .delete()
+      .eq('id', session.roomId)
+      .select('id')
+
+    if (error || !data?.length) {
+      setDeleteConfirmOpen(false)
+      setLocationNotice('방을 삭제하지 못했어요. Supabase의 rooms 삭제 정책을 확인해주세요.')
+      return
+    }
+
+    const nextRooms = await loadAvailableJoinedRooms(session.roomId)
+    if (nextRooms.length > 0) {
+      const nextRoom = nextRooms[0]
+      const next = { ...session, roomId: nextRoom.id, roomName: nextRoom.name }
+      localStorage.setItem(ROOM_SESSION_STORAGE_KEY, JSON.stringify(next))
+      setJoinedRooms(nextRooms)
+      setMobileView('map')
+      setDeleteConfirmOpen(false)
+      setSession(next)
+      return
+    }
+
+    localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
     setSession(null)
   }
 
@@ -858,6 +1165,14 @@ function Room({ session, setSession }) {
           </button>
         })}
       </nav>
+      <div className="roomProfile">
+        <span>{authUser.displayName.slice(0, 1)}</span>
+        <div>
+          <b>{authUser.displayName}</b>
+          <small>{getProviderLabel(authUser.provider)}</small>
+        </div>
+        <button className="iconButton" onClick={onLogout} title="로그아웃"><LogOut size={18} /></button>
+      </div>
     </aside>
     <main className="mapArea" ref={mapAreaRef}>
       <section className="mobileMapTop">
@@ -868,6 +1183,7 @@ function Room({ session, setSession }) {
           </div>
           <div className="toolbarActions">
             <button className="iconButton" onClick={() => setMembersOpen(true)} title="함께 있는 사람"><Users size={21} /></button>
+            {isOwner && <button className="iconButton danger" onClick={() => setDeleteConfirmOpen(true)} title="방 삭제"><Trash2 size={21} /></button>}
             <button className="iconButton danger" onClick={() => setLeaveConfirmOpen(true)} title="나가기"><LogOut size={21} /></button>
           </div>
         </header>
@@ -952,6 +1268,7 @@ function Room({ session, setSession }) {
           <div className="toolbarActions">
             <button className="iconButton" onClick={() => setMembersOpen(true)} title="함께 있는 사람"><Users size={21} /></button>
             <button className="iconButton" onClick={() => setChatOpen(false)} title="채팅 접기"><PanelRightClose size={21} /></button>
+            {isOwner && <button className="iconButton danger" onClick={() => setDeleteConfirmOpen(true)} title="방 삭제"><Trash2 size={21} /></button>}
             <button className="iconButton danger" onClick={() => setLeaveConfirmOpen(true)} title="나가기"><LogOut size={21} /></button>
           </div>
         </header>
@@ -1027,19 +1344,30 @@ function Room({ session, setSession }) {
         </div>
       </div>
     </div>}
+    {deleteConfirmOpen && <div className="modalBackdrop" onClick={() => setDeleteConfirmOpen(false)}>
+      <div className="confirmModal" onClick={e => e.stopPropagation()}>
+        <b>방을 삭제할까요?</b>
+        <p>{session.roomName} 방과 채팅, 장소, 댓글이 모두 삭제돼요. 이 작업은 되돌릴 수 없어요.</p>
+        <div>
+          <button onClick={() => setDeleteConfirmOpen(false)}>취소</button>
+          <button className="destructive" onClick={deleteRoom}>삭제</button>
+        </div>
+      </div>
+    </div>}
     {roomManagerOpen && <div className="modalBackdrop" onClick={() => setRoomManagerOpen(false)}>
       <div className="roomManagerModal" onClick={e => e.stopPropagation()}>
         <div className="modalHead">
           <div>
             <b>방 추가</b>
-            <span>{session.username}님이 참여할 방을 관리해요.</span>
+            <span>{isGuest ? '게스트는 참여할 방만 찾을 수 있어요.' : `${session.username}님이 참여할 방을 관리해요.`}</span>
           </div>
           <button className="iconButton" onClick={() => setRoomManagerOpen(false)} title="닫기"><X size={20} /></button>
         </div>
         <div className="tabs compact" role="tablist">
           <button className={roomMode === 'find' ? 'active' : ''} onClick={() => { setRoomMode('find'); setRoomError('') }}>방 찾기</button>
-          <button className={roomMode === 'create' ? 'active' : ''} onClick={() => { setRoomMode('create'); setRoomError('') }}>방 만들기</button>
+          <button className={roomMode === 'create' ? 'active' : ''} disabled={isGuest} onClick={() => { setRoomMode('create'); setRoomError('') }}>방 만들기</button>
         </div>
+        {isGuest && <div className="guestNotice">게스트는 방 참가만 가능해요.</div>}
         <div className="formStack managerForm">
           {roomMode === 'find' && <>
             <label><span>방 검색</span><input placeholder="방 이름 입력" value={roomQuery} onChange={e => { setRoomQuery(e.target.value); setSelectedJoinRoom(null) }} /></label>
@@ -1057,7 +1385,7 @@ function Room({ session, setSession }) {
           <label><span>비밀번호</span><input placeholder="방 비밀번호" type="password" value={roomForm.password} onChange={e => setRoomForm({ ...roomForm, password: e.target.value })} /></label>
         </div>
         {roomError && <div className="error">{roomError}</div>}
-        <button className="primary modalPrimary" disabled={roomLoading} onClick={() => roomMode === 'create' ? createRoomFromManager() : joinRoomFromManager(selectedJoinRoom)}>
+        <button className="primary modalPrimary" disabled={roomLoading || (roomMode === 'create' && isGuest)} onClick={() => roomMode === 'create' ? createRoomFromManager() : joinRoomFromManager(selectedJoinRoom)}>
           {roomLoading ? '처리 중...' : roomMode === 'create' ? '방 만들고 이동' : '방 입장하기'}
         </button>
       </div>
