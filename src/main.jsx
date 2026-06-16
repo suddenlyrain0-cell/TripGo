@@ -576,6 +576,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const selectedMarkerRef = useRef(null)
   const currentMarkerRef = useRef(null)
   const kakaoRef = useRef(null)
+  const chatRef = useRef(null)
   const chatOpenRef = useRef(chatOpen)
   const mobileViewRef = useRef(mobileView)
   const resizingRef = useRef(false)
@@ -590,6 +591,15 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     mobileViewRef.current = mobileView
     if (mobileView === 'chat') setUnreadCount(0)
   }, [mobileView])
+
+  useEffect(() => {
+    if (!chatRef.current) return
+    if (!chatOpen && mobileView !== 'chat') return
+    requestAnimationFrame(() => {
+      if (!chatRef.current) return
+      chatRef.current.scrollTop = chatRef.current.scrollHeight
+    })
+  }, [messages, chatOpen, mobileView])
 
   useEffect(() => {
     loadInitial()
@@ -749,7 +759,15 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     if (!selectedPlace) return
 
     const position = new kakaoRef.current.maps.LatLng(Number(selectedPlace.y), Number(selectedPlace.x))
-    const markerContent = '<div class="selectedMapPin"><span></span></div>'
+    const markerContent = document.createElement('button')
+    markerContent.type = 'button'
+    markerContent.className = 'selectedMapPin'
+    markerContent.title = `${selectedPlace.place_name} 다시 열기`
+    markerContent.innerHTML = '<span></span>'
+    markerContent.addEventListener('click', event => {
+      event.stopPropagation()
+      setSelectedPlace(selectedPlace)
+    })
     selectedMarkerRef.current = new kakaoRef.current.maps.CustomOverlay({
       position,
       content: markerContent,
@@ -1045,9 +1063,19 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     mapObj.current.setLevel(4)
     mapObj.current.setCenter(position)
     if (selectedMarkerRef.current) selectedMarkerRef.current.setMap(null)
+    const markerContent = document.createElement('button')
+    markerContent.type = 'button'
+    markerContent.className = 'selectedMapPin savedPlacePin'
+    markerContent.title = `${place.name} 상세 다시 열기`
+    markerContent.innerHTML = '<span></span>'
+    markerContent.addEventListener('click', event => {
+      event.stopPropagation()
+      setSelectedSavedPlace(place)
+      setFocusedPlaceId(place.id)
+    })
     selectedMarkerRef.current = new kakaoRef.current.maps.CustomOverlay({
       position,
-      content: '<div class="selectedMapPin savedPlacePin"><span></span></div>',
+      content: markerContent,
       yAnchor: 1,
       zIndex: 11,
       map: mapObj.current
@@ -1418,7 +1446,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           </div>
           <div className="toolbarActions">
             <button className="iconButton" onClick={() => setMembersOpen(true)} title="함께 있는 사람"><Users size={21} /></button>
-            <button className="iconButton" onClick={() => setChatOpen(false)} title="채팅 접기"><PanelRightClose size={21} /></button>
+            <button className="iconButton chatCollapseButton" onClick={() => setChatOpen(false)} title="채팅 접기"><PanelRightClose size={21} /></button>
             {isOwner && <button className="iconButton danger" onClick={() => setDeleteConfirmOpen(true)} title="방 삭제"><Trash2 size={21} /></button>}
             <button className="iconButton danger" onClick={() => setLeaveConfirmOpen(true)} title="나가기"><LogOut size={21} /></button>
           </div>
@@ -1427,7 +1455,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           <b>추가된 장소</b>
           {renderPlaceStories()}
         </section>
-        <section className="chat">{messages.length > 0 ? messages.map(m => {
+        <section className="chat" ref={chatRef}>{messages.length > 0 ? messages.map(m => {
           const placeMessage = m.type === 'place_comment' ? parsePlaceMessage(m) : null
           if (placeMessage) {
             return <div key={m.id} className="system msg placeMessage">

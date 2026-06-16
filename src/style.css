@@ -187,7 +187,7 @@ body.resizingChat .room{transition:none}
 
 .mapArea{position:relative;min-width:0;background:#eef0f4}
 .map{width:100%;height:100%}
-.selectedMapPin{position:relative;width:38px;height:38px;border-radius:50% 50% 50% 8px;background:#0a84ff;transform:rotate(-45deg);box-shadow:0 10px 24px rgba(10,132,255,.38);border:4px solid #fff}
+.selectedMapPin{position:relative;width:38px;height:38px;border-radius:50% 50% 50% 8px;background:#0a84ff;transform:rotate(-45deg);box-shadow:0 10px 24px rgba(10,132,255,.38);border:4px solid #fff;padding:0;appearance:none}
 .selectedMapPin span{position:absolute;inset:9px;border-radius:50%;background:#fff;display:block}
 .selectedMapPin:after{content:"";position:absolute;left:50%;top:50%;width:58px;height:58px;border-radius:50%;background:rgba(10,132,255,.18);transform:translate(-50%,-50%);z-index:-1;animation:pinPulse 1.6s ease-out infinite}
 @keyframes pinPulse{0%{opacity:.8;transform:translate(-50%,-50%) scale(.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35)}}
@@ -326,18 +326,18 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .room,.room.chatCollapsed{grid-template-columns:1fr;height:100dvh;padding-bottom:0}
   .mapArea{grid-column:1;grid-row:1;height:100dvh}
   .map{height:100%}
-  .mobileMapTop{display:block;position:absolute;z-index:6;top:0;left:0;right:0;background:rgba(255,255,255,.62);border-bottom:1px solid rgba(255,255,255,.72);box-shadow:0 12px 34px rgba(0,0,0,.08);backdrop-filter:blur(30px) saturate(1.35)}
+  .mobileMapTop{display:block;position:absolute;z-index:6;top:0;left:0;right:0;background:rgba(255,255,255,.48);border-bottom:0;box-shadow:0 12px 34px rgba(0,0,0,.06);backdrop-filter:blur(34px) saturate(1.45)}
   .mobileMapTop .sideHeader{min-height:58px;padding:10px 16px;background:transparent}
-  .mobileMapTop .sideHeader h2{font-size:22px;white-space:normal;line-height:1.05}
+  .mobileMapTop .sideHeader h2{font-size:19px;white-space:normal;line-height:1.05}
   .mobileMapTop .sideHeader h2{display:flex;align-items:center;gap:9px}
-  .mobileBrandMark{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:#0a84ff;color:#fff;box-shadow:0 8px 18px rgba(10,132,255,.24)}
+  .mobileBrandMark{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#0a84ff;color:#fff;box-shadow:0 8px 18px rgba(10,132,255,.22)}
   .mobileMapTop .sideHeader p{font-size:13px}
-  .mobileMapTop .places{padding:0 16px 9px;border-bottom:0}
+  .mobileMapTop .places{padding:8px 16px 4px;border-bottom:0}
   .mobileMapTop .places>b{display:none}
-  .mobileMapTop .placeStoryScroller{margin-top:0;padding-bottom:6px}
+  .mobileMapTop .placeStoryScroller{margin-top:0;padding-bottom:2px}
   .mobileMapTop .placeStory{flex-basis:72px}
   .mobileMapTop .addPlaceStory{display:grid}
-  .mobileMapTop .addPlaceStory .placeStoryRing{background:#1d1d1f;border-color:#1d1d1f;color:#fff}
+  .mobileMapTop .addPlaceStory .placeStoryRing{background:rgba(118,118,128,.2);border-color:rgba(255,255,255,.72);color:#3a3a3c;backdrop-filter:blur(18px) saturate(1.25)}
   .mobileMapTop .emptyState{display:none}
   .roomList{display:none;position:absolute;z-index:12;inset:0;width:auto;height:auto;border-radius:0;padding:18px;background:rgba(242,242,247,.92)}
   .mobile-rooms .roomList{display:grid}
@@ -357,6 +357,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .side{display:none;position:absolute;z-index:11;inset:0;width:auto;height:auto;border-radius:0;box-shadow:none;border-left:0}
   .mobile-chat .side{display:grid;grid-template-rows:auto minmax(0,1fr) auto;bottom:calc(64px + env(safe-area-inset-bottom));height:auto}
   .mobile-chat .chatResizeHandle{display:none}
+  .mobile-chat .chatCollapseButton{display:none}
   .mobile-chat .sideHeader{min-height:64px;padding:10px 16px}
   .mobile-chat .side>.places{display:none}
   .mobile-chat .chat{padding:16px;background:rgba(250,250,250,.78)}
