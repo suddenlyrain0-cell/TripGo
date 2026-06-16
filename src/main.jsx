@@ -412,7 +412,7 @@ function Landing({ onStart }) {
       </div>
       <div className="featureList">
         <span><MapPin size={18} />카카오 지도 검색</span>
-        <span><Users size={18} />함께 있는 사람 관리</span>
+        <span><Users size={18} />멤버 관리</span>
         <span><MessageCircle size={18} />실시간 채팅 알림</span>
       </div>
     </section>
@@ -630,7 +630,7 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
       {error && <div className="error">{error}</div>}
       <button className="primary" disabled={primaryDisabled} onClick={submitLobby}>{loading ? '준비 중...' : mode === 'create' ? '방 만들고 입장' : '입장하기'}</button>
     </div>
-    {loading && <div className="loadingOverlay"><div className="spinner" /><b>{mode === 'create' ? '방을 만들고 있어요' : '방에 입장하고 있어요'}</b></div>}
+    {loading && <div className="loadingOverlay"><div className="loadingLogo"><LogoMark /></div><div className="spinner" /><b>{mode === 'create' ? '방을 만들고 있어요' : '방에 입장하고 있어요'}</b></div>}
   </div>
 }
 
@@ -1987,7 +1987,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             <p>{members.length}명 · 저장된 장소 {places.length}곳</p>
           </div>
           <div className="toolbarActions">
-            <button className="iconButton" onClick={() => setMembersOpen(true)} title="함께 있는 사람"><Users size={21} /></button>
+            <button className="iconButton" onClick={() => setMembersOpen(true)} title="멤버"><Users size={21} /></button>
             <button className="iconButton chatCollapseButton" onClick={() => setChatOpen(false)} title="채팅 접기"><PanelRightClose size={21} /></button>
             {isOwner && <button className="iconButton danger" onClick={() => setDeleteConfirmOpen(true)} title="방 삭제"><Trash2 size={21} /></button>}
             <button className="iconButton danger" onClick={() => setLeaveConfirmOpen(true)} title="나가기"><LogOut size={21} /></button>
@@ -2074,7 +2074,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       <div className="membersModal" onClick={e => e.stopPropagation()}>
         <div className="modalHead">
           <div>
-            <b>함께 있는 사람</b>
+            <b>멤버</b>
             <span>{session.roomName}</span>
           </div>
           <div className="modalHeadActions">

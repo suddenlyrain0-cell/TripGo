@@ -103,7 +103,7 @@ input:focus,select:focus{border-color:#0a84ff;box-shadow:0 0 0 4px rgba(10,132,2
 .sessionPill b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
 .sessionPill small{display:block;margin-top:2px;color:#6e6e73;font-size:11px;font-weight:800}
 .logoutButton{background:rgba(255,255,255,.44);flex:0 0 auto}
-.loginButton{height:42px;border-radius:999px;padding:0 20px;background:linear-gradient(135deg,rgba(255,214,45,.96),rgba(255,184,0,.78));color:#4f3600;font-weight:880;border:1px solid rgba(255,255,255,.56);box-shadow:inset 0 1px 0 rgba(255,255,255,.62),inset 0 0 0 1px rgba(255,255,255,.14),0 14px 30px rgba(255,184,0,.2);backdrop-filter:blur(22px) saturate(1.35)}
+.loginButton{height:42px;border-radius:999px;padding:0 20px;background:linear-gradient(135deg,rgba(255,214,45,.96),rgba(255,184,0,.78));color:#fff;font-weight:880;text-shadow:0 1px 2px rgba(132,84,0,.22);border:1px solid rgba(255,255,255,.56);box-shadow:inset 0 1px 0 rgba(255,255,255,.62),inset 0 0 0 1px rgba(255,255,255,.14),0 14px 30px rgba(255,184,0,.2);backdrop-filter:blur(22px) saturate(1.35)}
 .loginButton:hover{background:linear-gradient(135deg,rgba(255,226,70,.98),rgba(255,193,7,.84));box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 0 0 1px rgba(255,255,255,.18),0 16px 34px rgba(255,184,0,.24);transform:translateY(-1px)}
 .card h1{margin:0 0 8px;font-size:42px;letter-spacing:0;font-weight:860;line-height:1.02}
 .card p{max-width:410px;margin:0;color:#5f6066;line-height:1.4;font-size:15px;font-weight:680}
@@ -158,8 +158,10 @@ input:focus,select:focus{border-color:#0a84ff;box-shadow:0 0 0 4px rgba(10,132,2
 .error{margin:8px 0 14px;color:#ff3b30;font-weight:700}
 .loadingOverlay{position:fixed;z-index:30;inset:0;display:grid;place-items:center;gap:14px;align-content:center;background:rgba(245,245,247,.62);backdrop-filter:blur(16px);color:#1d1d1f;font-size:17px}
 .inlineLoading{position:relative;inset:auto;min-width:250px;min-height:160px;border-radius:24px;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.72);box-shadow:0 20px 64px rgba(0,0,0,.14)}
-.spinner{width:42px;height:42px;border-radius:50%;border:4px solid rgba(10,132,255,.18);border-top-color:#0a84ff;animation:spin .8s linear infinite}
+.loadingLogo{width:58px;height:58px;display:grid;place-items:center;filter:drop-shadow(0 12px 24px rgba(255,59,48,.2))}
+.spinner{width:42px;height:42px;border-radius:50%;border:4px solid rgba(10,132,255,.18);border-top-color:#ff3b30;animation:spin .8s linear infinite,rainbowSpin 2.4s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes rainbowSpin{0%{border-top-color:#ff3b30}16%{border-top-color:#ff9500}32%{border-top-color:#ffcc00}48%{border-top-color:#34c759}64%{border-top-color:#0a84ff}80%{border-top-color:#5856d6}100%{border-top-color:#ff3b30}}
 .inviteCard h1{margin-top:4px}
 .inviteForm{margin-top:22px}
 .inviteActions{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center}
@@ -333,8 +335,9 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .modalBackdrop{position:fixed;z-index:20;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.22);backdrop-filter:blur(8px)}
 .membersModal{width:min(380px,calc(100vw - 32px));max-height:min(520px,calc(100vh - 48px));overflow:auto;background:rgba(255,255,255,.94);border:1px solid rgba(0,0,0,.1);border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.24);padding:14px}
 .modalHead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 2px 14px}
+.modalHead>div:first-child{min-width:0}
 .modalHead b{display:block;font-size:22px}
-.modalHead span{display:block;margin-top:3px;color:#6e6e73;font-weight:700}
+.modalHead span{display:block;margin-top:3px;color:#6e6e73;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .modalHeadActions{display:flex;align-items:center;gap:8px}
 .memberInviteButton{height:34px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:17px;background:rgba(255,59,48,.12);color:#ff3b30;font-size:13px;font-weight:900;border:1px solid rgba(255,59,48,.2);box-shadow:0 8px 20px rgba(255,59,48,.08);white-space:nowrap;backdrop-filter:blur(18px) saturate(1.25)}
 .memberInviteNotice{margin:-6px 2px 10px;color:#ff3b30;font-size:12px;font-weight:820;text-align:right}
@@ -437,7 +440,8 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .placeDetailPanel .placeCommentList{max-height:96px}
   .placeDetailPanel .placeCommentForm{grid-template-columns:minmax(0,1fr) 54px}
   .placeDetailPanel .placeCommentForm input,.placeDetailPanel .placeCommentForm button{height:40px}
-  .locateButton{right:14px;bottom:calc(76px + env(safe-area-inset-bottom))}
+  .locateButton{right:14px;bottom:calc(76px + env(safe-area-inset-bottom));width:52px;height:52px;padding:0;justify-content:center;border-radius:50%;background:rgba(255,255,255,.58);border-color:rgba(255,255,255,.86);box-shadow:inset 0 1px 0 rgba(255,255,255,.82),0 10px 24px rgba(0,0,0,.12);backdrop-filter:blur(28px) saturate(1.35)}
+  .locateButton span{display:none}
   .placeNotice{bottom:calc(136px + env(safe-area-inset-bottom));width:calc(100% - 36px);text-align:center}
   .mobileTabBar{position:fixed;z-index:30;left:0;right:0;bottom:0;height:calc(64px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:6px 8px calc(6px + env(safe-area-inset-bottom));border-radius:0;background:rgba(255,255,255,.82);border-top:1px solid rgba(0,0,0,.08);box-shadow:0 -8px 26px rgba(0,0,0,.12);backdrop-filter:blur(28px) saturate(1.35)}
   .mobileTabBar button{--tab-color:#ff3b30;position:relative;display:grid;place-items:center;align-content:center;gap:2px;border-radius:16px;background:transparent;color:#6e6e73;font-weight:850}
