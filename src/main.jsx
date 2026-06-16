@@ -2099,7 +2099,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     {membersOpen && <div className="modalBackdrop" onClick={() => setMembersOpen(false)}>
       <div className="membersModal" onClick={e => e.stopPropagation()}>
         <div className="modalHead">
-          <div>
+          <div className="memberModalTitle">
             <b>멤버</b>
             <span>{session.roomName}</span>
           </div>
