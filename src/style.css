@@ -196,10 +196,11 @@ body.resizingChat .room{transition:none}
 .mapArea{position:relative;min-width:0;background:#eef0f4}
 .map{width:100%;height:100%}
 .selectedMapPin,.routeMapPin{position:relative;width:38px;height:38px;border-radius:50% 50% 50% 8px;background:var(--route-color,#0a84ff);transform:rotate(-45deg);box-shadow:0 10px 24px rgba(0,0,0,.22);border:4px solid #fff;padding:0;appearance:none}
-.selectedMapPin span,.routeMapPin span{position:absolute;inset:9px;border-radius:50%;background:#fff;display:block}
+.selectedMapPin span,.routeMapPin span{position:absolute;inset:2px;border-radius:50%;display:grid;place-items:center;transform:rotate(45deg)}
+.selectedMapPin img,.routeMapPin img{width:115%;height:115%;display:block;object-fit:contain}
 .selectedMapPin:after,.routeMapPin:after{content:"";position:absolute;left:50%;top:50%;width:58px;height:58px;border-radius:50%;background:color-mix(in srgb,var(--route-color,#0a84ff) 22%,transparent);transform:translate(-50%,-50%);z-index:-1;animation:pinPulse 1.6s ease-out infinite}
 .routeMapPin{width:30px;height:30px;border-width:3px;box-shadow:0 8px 18px rgba(0,0,0,.2)}
-.routeMapPin span{inset:8px}
+.routeMapPin span{inset:1px}
 .routeMapPin:after{display:none}
 @keyframes pinPulse{0%{opacity:.8;transform:translate(-50%,-50%) scale(.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35)}}
 .toolbarActions{display:flex;gap:6px;flex-wrap:nowrap;justify-content:flex-end;flex:0 0 auto}
@@ -295,6 +296,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .placeStory.active .placeStoryRing{background:#fff;border-color:var(--route-color,#0a84ff);box-shadow:0 12px 30px rgba(10,132,255,.24)}
 .placeStory.active strong{color:#0a84ff}
 .placeStoryRing{position:relative;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#fff;border:3px solid color-mix(in srgb,var(--route-color,#9bd6ff) 45%,white);color:var(--route-color,#0a84ff);box-shadow:0 8px 20px rgba(0,0,0,.08);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+.placeStoryIcon{width:31px;height:31px}
 .placeOrderBadge{position:absolute;right:-6px;top:-7px;min-width:24px;height:24px;padding:0 7px;border-radius:999px;display:grid;place-items:center;background:var(--route-color,#ff3b30);color:#fff;border:2px solid rgba(255,255,255,.96);box-shadow:0 7px 16px rgba(0,0,0,.18);font-size:13px;font-style:normal;font-weight:950;line-height:1}
 .placeStory strong{width:72px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px;line-height:1.1;font-weight:850}
 .placeStory small{width:72px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#8e8e93;font-size:10px;font-weight:800;line-height:1}
