@@ -2056,12 +2056,12 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             <b>함께 있는 사람</b>
             <span>{session.roomName}</span>
           </div>
-          <button className="iconButton" onClick={() => setMembersOpen(false)} title="닫기"><X size={20} /></button>
+          <div className="modalHeadActions">
+            <button className="memberInviteButton" onClick={copyInviteLink}><Link2 size={15} /> 초대 링크 복사</button>
+            <button className="iconButton" onClick={() => setMembersOpen(false)} title="닫기"><X size={20} /></button>
+          </div>
         </div>
-        <div className="memberInvitePanel">
-          <button onClick={copyInviteLink}><Link2 size={17} /> 초대 링크 복사</button>
-          {inviteNotice && <span>{inviteNotice}</span>}
-        </div>
+        {inviteNotice && <div className="memberInviteNotice">{inviteNotice}</div>}
         <div className="memberList">{members.map(m => {
           const memberIsOwner = m.username === ownerName
           const canManage = isOwner && m.username !== session.username

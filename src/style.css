@@ -327,9 +327,9 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .modalHead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 2px 14px}
 .modalHead b{display:block;font-size:22px}
 .modalHead span{display:block;margin-top:3px;color:#6e6e73;font-weight:700}
-.memberInvitePanel{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:10px;border-radius:16px;background:rgba(255,59,48,.08);border:1px solid rgba(255,59,48,.14);box-shadow:0 10px 24px rgba(255,59,48,.06);backdrop-filter:blur(18px) saturate(1.25)}
-.memberInvitePanel button{height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 14px;border-radius:18px;background:rgba(255,59,48,.13);color:#ff3b30;font-size:14px;font-weight:900;border:1px solid rgba(255,59,48,.2);white-space:nowrap}
-.memberInvitePanel span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#ff3b30;font-size:12px;font-weight:820}
+.modalHeadActions{display:flex;align-items:center;gap:8px}
+.memberInviteButton{height:34px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:17px;background:rgba(255,59,48,.12);color:#ff3b30;font-size:13px;font-weight:900;border:1px solid rgba(255,59,48,.2);box-shadow:0 8px 20px rgba(255,59,48,.08);white-space:nowrap;backdrop-filter:blur(18px) saturate(1.25)}
+.memberInviteNotice{margin:-6px 2px 10px;color:#ff3b30;font-size:12px;font-weight:820;text-align:right}
 .memberList{display:grid;gap:8px}
 .memberList div{min-height:54px;display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 10px;border-radius:15px;background:#f5f5f7}
 .memberList span{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:#0a84ff;color:#fff;font-weight:900}
