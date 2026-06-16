@@ -295,7 +295,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .msg b{display:block;margin:0 0 5px 8px;color:#7a7a80;font-size:13px;font-weight:800}
 .msg p{display:inline-block;max-width:92%;margin:0;background:#e5e5ea;color:#1d1d1f;padding:11px 14px;border-radius:19px;line-height:1.36;word-break:break-word}
 .system p{background:#fff4d8;color:#8a4b00}
-.reactionPicker{width:max-content;max-width:100%;display:flex;align-items:center;gap:7px;margin:7px 0 3px 8px;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.46);border:1px solid rgba(255,255,255,.74);box-shadow:0 14px 38px rgba(0,0,0,.14);backdrop-filter:blur(34px) saturate(1.45)}
+.reactionPicker{width:max-content;max-width:100%;display:flex;align-items:center;gap:7px;margin:7px 0 3px 8px;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.34);border:1px solid rgba(255,255,255,.64);box-shadow:0 14px 38px rgba(0,0,0,.14);backdrop-filter:blur(34px) saturate(1.45)}
 .reactionPicker button{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:transparent;border:0;font-size:20px;line-height:1;padding:0;overflow:visible}
 .reactionPicker button:hover,.reactionPicker button.active{background:rgba(10,132,255,.12);transform:translateY(-1px)}
 .reactionSummary{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 0 8px}
@@ -303,7 +303,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .reactionSummary button.mine{border-color:rgba(10,132,255,.24);background:rgba(10,132,255,.12)}
 .reactionSummary span{font-size:12px;line-height:1}
 .reactionSummary b{margin:0;color:#3a3a3c;font-size:11px;font-weight:850}
-.placeMessage button{display:block;margin-top:7px;height:34px;border-radius:13px;background:rgba(255,255,255,.74);color:#0a84ff;font-size:13px;font-weight:850;padding:0 12px;border:1px solid rgba(10,132,255,.16)}
+.placeMessage>button{display:block;margin-top:7px;height:34px;border-radius:13px;background:rgba(255,255,255,.74);color:#0a84ff;font-size:13px;font-weight:850;padding:0 12px;border:1px solid rgba(10,132,255,.16)}
 .side footer{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:8px;align-items:center;padding:14px 14px 16px;border-top:1px solid rgba(0,0,0,.07);background:rgba(248,248,248,.58)}
 .side footer input{height:44px;border-radius:22px;background:rgba(242,242,247,.6)}
 .roundButton{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:rgba(236,236,240,.62);color:#8e8e93}
