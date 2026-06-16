@@ -79,10 +79,18 @@ input:focus,select:focus{border-color:#0a84ff;box-shadow:0 0 0 4px rgba(10,132,2
 }
 
 .lobby{position:relative;min-height:100vh;display:grid;place-items:center;padding:24px;overflow:hidden;background:#eef2f7}
-.lobby:after{content:"";position:absolute;inset:0;z-index:1;background:radial-gradient(circle at 50% 24%,rgba(255,255,255,.34),rgba(246,248,252,.46) 46%,rgba(238,242,247,.68) 100%);pointer-events:none}
+.lobby:before{content:"";position:absolute;inset:-36px;z-index:0;background:
+  linear-gradient(26deg,transparent 0 23%,rgba(244,180,86,.34) 23.4% 24.1%,transparent 24.5% 100%),
+  linear-gradient(151deg,transparent 0 38%,rgba(244,180,86,.28) 38.4% 39.2%,transparent 39.6% 100%),
+  linear-gradient(93deg,transparent 0 44%,rgba(112,176,231,.28) 44.4% 46.6%,transparent 47% 100%),
+  radial-gradient(circle at 31% 38%,rgba(123,203,139,.18) 0 7%,transparent 7.3%),
+  radial-gradient(circle at 68% 74%,rgba(123,203,139,.16) 0 8%,transparent 8.3%),
+  linear-gradient(90deg,rgba(229,244,250,.92) 0 28%,rgba(249,248,239,.96) 28% 72%,rgba(200,232,246,.92) 72% 100%);
+  opacity:.95;transform:scale(1.02);pointer-events:none}
+.lobby:after{content:"";position:absolute;inset:0;z-index:1;background:radial-gradient(circle at 50% 24%,rgba(255,255,255,.2),rgba(246,248,252,.32) 46%,rgba(210,232,244,.5) 100%);pointer-events:none}
 .lobbyMap{position:absolute;inset:-36px;z-index:0;opacity:.74;filter:saturate(.95) contrast(.98) blur(.25px);transform:scale(1.02)}
 .card{position:relative;z-index:2;width:min(500px,100%);background:rgba(255,255,255,.46);border:1px solid rgba(255,255,255,.66);border-radius:30px;padding:26px;box-shadow:0 24px 76px rgba(0,0,0,.14);backdrop-filter:blur(30px) saturate(1.45)}
-.authCard{width:min(460px,100%)}
+.authCard{width:min(520px,100%)}
 .setupCard{width:min(560px,100%)}
 .cardTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:16px}
 .cardTop .appMark{margin-bottom:0;flex:0 0 auto}
@@ -92,27 +100,36 @@ input:focus,select:focus{border-color:#0a84ff;box-shadow:0 0 0 4px rgba(10,132,2
 .sessionPill b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
 .sessionPill small{display:block;margin-top:2px;color:#6e6e73;font-size:11px;font-weight:800}
 .logoutButton{background:rgba(255,255,255,.44);flex:0 0 auto}
+.loginButton{height:42px;border-radius:999px;padding:0 18px;background:#1d1d1f;color:#fff;font-weight:880;box-shadow:0 12px 28px rgba(0,0,0,.16)}
+.loginButton:hover{background:#2c2c2e;transform:translateY(-1px)}
 .card h1{margin:0 0 8px;font-size:42px;letter-spacing:0;font-weight:860;line-height:1.02}
 .card p{max-width:410px;margin:0;color:#5f6066;line-height:1.4;font-size:15px;font-weight:680}
 .setupCard p{max-width:none}
 .setupCard pre{margin:18px 0 0;white-space:pre-wrap;word-break:break-word;border-radius:16px;background:rgba(29,29,31,.88);color:#fff;padding:16px;font-size:13px;line-height:1.55;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .setupHint{margin-top:12px;padding:11px 12px;border-radius:14px;background:rgba(10,132,255,.12);color:#0052a3;font-size:13px;font-weight:850}
-.authActions{display:grid;gap:10px;margin:24px 0 12px}
-.oauthButton{height:52px;display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:10px;text-align:left;border-radius:17px;padding:0 14px;font-weight:880;box-shadow:0 10px 28px rgba(0,0,0,.08)}
-.oauthButton b{width:32px;height:32px;border-radius:11px;display:grid;place-items:center;font-size:17px}
+.authActions{display:grid;gap:12px;margin:30px 0 2px}
+.authBackdrop{background:rgba(0,0,0,.42)}
+.authBackdrop .authCard{padding:30px;width:min(560px,calc(100vw - 32px));background:rgba(255,255,255,.9);border-color:rgba(255,255,255,.78);border-radius:34px;box-shadow:0 30px 90px rgba(0,0,0,.28);backdrop-filter:blur(34px) saturate(1.35)}
+.authBackdrop .authCard h1{font-size:48px;margin-top:20px}
+.authBackdrop .authCard p{font-size:17px}
+.authCloseButton{position:absolute;right:24px;top:24px;width:42px;height:42px;border-radius:14px;background:transparent;color:#6e6e73}
+.authCloseButton:hover{background:rgba(118,118,128,.12);color:#1d1d1f}
+.oauthButton{height:58px;display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:14px;text-align:left;border-radius:19px;padding:0 18px;font-weight:880;box-shadow:0 12px 30px rgba(0,0,0,.08)}
+.socialLogo{width:36px;height:36px;border-radius:13px;display:grid;place-items:center}
+.socialLogo svg{width:26px;height:26px}
+.kakaoLogo{background:rgba(0,0,0,.08);color:#181600}
+.googleLogo{background:#f5f5f7}
 .oauthButton span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .oauthButton.kakao{background:#fee500;color:#191600}
-.oauthButton.kakao b{background:rgba(0,0,0,.1)}
 .oauthButton.google{background:#fff;color:#1d1d1f;border:1px solid rgba(0,0,0,.08)}
-.oauthButton.google b{background:#f2f2f7;color:#0a84ff}
 .oauthButton:disabled{opacity:.68;cursor:default}
-.guestPanel{display:grid;gap:10px;margin-top:12px;padding:12px;border-radius:18px;background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.68)}
+.guestPanel{display:grid;gap:12px;margin-top:18px;padding:14px;border-radius:21px;background:rgba(255,255,255,.56);border:1px solid rgba(255,255,255,.72);box-shadow:inset 0 0 0 1px rgba(0,0,0,.025)}
 .guestPanelHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.guestPanelHead b{font-size:15px;font-weight:880}
+.guestPanelHead b{font-size:17px;font-weight:880}
 .guestPanelHead span{min-height:26px;display:flex;align-items:center;padding:0 9px;border-radius:13px;background:rgba(118,118,128,.13);color:#6e6e73;font-size:12px;font-weight:850}
-.guestInlineForm{display:grid;grid-template-columns:minmax(0,1fr) 74px;gap:8px}
-.guestInlineForm input{height:44px;border-radius:14px}
-.guestInlineForm button{height:44px;border-radius:14px;background:#0a84ff;color:#fff;font-weight:850}
+.guestInlineForm{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:10px}
+.guestInlineForm input{height:48px;border-radius:16px;background:rgba(255,255,255,.78)}
+.guestInlineForm button{height:48px;border-radius:16px;background:#0a84ff;color:#fff;font-size:17px;font-weight:880;box-shadow:0 12px 28px rgba(10,132,255,.24)}
 .tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:24px 0 14px;padding:5px;background:rgba(118,118,128,.16);border-radius:17px}
 .tabs button{height:44px;border-radius:13px;background:transparent;color:#3a3a3c;font-size:16px;font-weight:830}
 .tabs .active{background:#fff;color:#0a84ff;box-shadow:0 7px 20px rgba(0,0,0,.12)}

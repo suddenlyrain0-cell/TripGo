@@ -86,6 +86,7 @@ function App() {
   const [authUser, setAuthUser] = useState(savedAuthUser)
   const [authLoading, setAuthLoading] = useState(true)
   const [session, setSession] = useState(savedSession)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
   const showLanding = false
   const [landingOpen, setLandingOpen] = useState(() => showLanding && sessionStorage.getItem('trip_room_landing_seen') !== 'true')
 
@@ -177,6 +178,7 @@ function App() {
     localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
     setAuthUser(nextUser)
     setSession(null)
+    setAuthModalOpen(false)
   }
 
   async function handleLogout() {
@@ -192,10 +194,12 @@ function App() {
   if (!isSupabaseConfigured) return <SetupRequired />
   if (authLoading) return <div className="lobby authLobby"><div className="loadingOverlay inlineLoading"><div className="spinner" /><b>로그인 확인 중...</b></div></div>
   if (landingOpen) return <Landing onStart={startService} />
-  if (!authUser) return <AuthScreen onOAuthLogin={handleOAuthLogin} onGuestLogin={handleGuestLogin} />
   return session
     ? <Room session={session} setSession={setSession} authUser={authUser} onLogout={handleLogout} />
-    : <Lobby setSession={setSession} authUser={authUser} onLogout={handleLogout} />
+    : <>
+      <Lobby setSession={setSession} authUser={authUser} onLogout={handleLogout} onRequireAuth={() => setAuthModalOpen(true)} />
+      {authModalOpen && <AuthScreen modal onClose={() => setAuthModalOpen(false)} onOAuthLogin={handleOAuthLogin} onGuestLogin={handleGuestLogin} />}
+    </>
 }
 
 function SetupRequired() {
@@ -212,8 +216,7 @@ VITE_KAKAO_MAP_KEY=your_kakao_javascript_key`}</pre>
   </div>
 }
 
-function AuthScreen({ onOAuthLogin, onGuestLogin }) {
-  const [guestName, setGuestName] = useState('')
+function AuthScreen({ modal = false, onClose, onOAuthLogin, onGuestLogin }) {
   const [error, setError] = useState('')
   const [loadingProvider, setLoadingProvider] = useState('')
   const isLoading = Boolean(loadingProvider)
@@ -229,42 +232,46 @@ function AuthScreen({ onOAuthLogin, onGuestLogin }) {
     }
   }
 
-  function loginAsGuest() {
-    const trimmed = guestName.trim()
-    const nameError = validateDisplayName(trimmed, '게스트 이름')
-    if (nameError) return setError(nameError)
-    setError('')
-    onGuestLogin(trimmed)
-  }
-
-  return <div className="lobby authLobby">
-    <div className="card authCard">
+  const content = <div className="card authCard">
+      {modal && <button className="iconButton authCloseButton" onClick={onClose} title="닫기"><X size={20} /></button>}
       <div className="appMark"><MapPin size={22} /></div>
-      <h1>어디가지</h1>
-      <p>로그인하고 여행 방에 참여하세요.</p>
+      <h1>어디가</h1>
+      <p>로그인하고 나만의 여행 방을 직접 만들어 보세요.</p>
       <div className="authActions">
         <button className="oauthButton kakao" disabled={isLoading} onClick={() => loginWithProvider('kakao')}>
-          <b>K</b>
-          <span>{loadingProvider === 'kakao' ? '카카오 연결 중...' : '카카오 로그인'}</span>
+          <span className="socialLogo kakaoLogo"><KakaoLogo /></span>
+          <span>{loadingProvider === 'kakao' ? '카카오 연결 중...' : '카카오계정 로그인'}</span>
         </button>
         <button className="oauthButton google" disabled={isLoading} onClick={() => loginWithProvider('google')}>
-          <b>G</b>
-          <span>{loadingProvider === 'google' ? '구글 연결 중...' : '구글 로그인'}</span>
+          <span className="socialLogo googleLogo"><GoogleLogo /></span>
+          <span>{loadingProvider === 'google' ? '구글 연결 중...' : 'Google로 시작하기'}</span>
         </button>
-      </div>
-      <div className="guestPanel">
-        <div className="guestPanelHead">
-          <b>게스트 로그인</b>
-          <span>참가 전용</span>
-        </div>
-        <div className="guestInlineForm">
-          <input maxLength={MAX_NAME_LENGTH} placeholder="게스트 이름" value={guestName} onChange={e => setGuestName(e.target.value)} onKeyDown={e => e.key === 'Enter' && loginAsGuest()} />
-          <button onClick={loginAsGuest} disabled={isLoading}>입장</button>
-        </div>
       </div>
       {error && <div className="error">{error}</div>}
     </div>
-  </div>
+
+  if (modal) {
+    return <div className="modalBackdrop authBackdrop" onMouseDown={event => event.target === event.currentTarget && onClose?.()}>
+      {content}
+    </div>
+  }
+
+  return <div className="lobby authLobby">{content}</div>
+}
+
+function KakaoLogo() {
+  return <svg viewBox="0 0 40 40" aria-hidden="true">
+    <path fill="currentColor" d="M20 8c-7.18 0-13 4.48-13 10 0 3.46 2.29 6.51 5.77 8.3l-1.05 4.18c-.12.49.43.87.84.58l4.85-3.42c.84.14 1.71.21 2.59.21 7.18 0 13-4.48 13-10S27.18 8 20 8Z" />
+  </svg>
+}
+
+function GoogleLogo() {
+  return <svg viewBox="0 0 48 48" aria-hidden="true">
+    <path fill="#EA4335" d="M24 9.5c3.54 0 6.72 1.22 9.22 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z" />
+    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.14-3.08-.4-4.55H24v9.02h12.94c-.58 2.9-2.26 5.36-4.78 7.01l7.73 6c4.51-4.18 7.09-10.36 7.09-17.48Z" />
+    <path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.77 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.86.92 7.5 2.56 10.78l7.97-6.19Z" />
+    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.97l-7.73-6c-2.15 1.45-4.9 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.74l-7.97 6.19C6.51 42.62 14.62 48 24 48Z" />
+  </svg>
 }
 
 function Landing({ onStart }) {
@@ -291,7 +298,7 @@ function Landing({ onStart }) {
     <nav className="landingNav">
       <div className="landingBrand">
         <span><MapPin size={19} /></span>
-        <b>어디가지</b>
+        <b>어디가</b>
       </div>
       <div className="landingLinks">
         <a href="#flow">작동 방식</a>
@@ -304,7 +311,7 @@ function Landing({ onStart }) {
       <div className="heroCopy">
         <div className="heroBadge">
           <MapPin size={16} />
-          <span>어디가지 · 여행 지도 방</span>
+          <span>어디가 · 여행 지도 방</span>
         </div>
         <h1>여행 장소를<br />같이 모으세요.</h1>
         <p>친구들과 함께 여행 장소를 지도에 모으고, 실시간으로 공유하는 협업 여행 지도 서비스입니다.</p>
@@ -366,7 +373,7 @@ function Landing({ onStart }) {
   </main>
 }
 
-function Lobby({ setSession, authUser, onLogout }) {
+function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
   const isGuest = authUser?.isGuest
   const [mode, setMode] = useState('find')
   const [rooms, setRooms] = useState([])
@@ -416,7 +423,14 @@ function Lobby({ setSession, authUser, onLogout }) {
     setLoading(true)
     try {
       await withMinimumLoading(() => supabase.from('room_members').upsert({ room_id: room.id, username: form.username.trim() }, { onConflict: 'room_id,username' }))
-      const next = { roomId: room.id, roomName: room.name, username: form.username.trim(), authId: authUser.id, provider: authUser.provider, isGuest }
+      const next = {
+        roomId: room.id,
+        roomName: room.name,
+        username: form.username.trim(),
+        authId: authUser?.id || null,
+        provider: authUser?.provider || 'guest',
+        isGuest: !authUser || isGuest
+      }
       localStorage.setItem(ROOM_SESSION_STORAGE_KEY, JSON.stringify(next))
       setSession(next)
     } catch (error) {
@@ -427,6 +441,10 @@ function Lobby({ setSession, authUser, onLogout }) {
 
   async function createRoom() {
     setError('')
+    if (!authUser) {
+      onRequireAuth()
+      return
+    }
     if (isGuest) return setError('게스트는 방 만들기를 할 수 없어요. 방 찾기로 참여해주세요.')
     if (!form.roomName.trim() || !form.password.trim() || !form.username.trim()) return setError('방 이름, 비밀번호, 사용자 이름을 모두 입력해주세요.')
     const roomNameError = validateDisplayName(form.roomName, '방 이름')
@@ -445,23 +463,25 @@ function Lobby({ setSession, authUser, onLogout }) {
   const filteredRooms = rooms
     .filter(room => room.name.toLowerCase().includes(roomQuery.trim().toLowerCase()))
     .slice(0, 5)
-  const primaryDisabled = loading || (mode === 'find' && !selectedRoom) || (mode === 'create' && isGuest)
+  const primaryDisabled = loading || (mode === 'find' && !selectedRoom) || (mode === 'create' && Boolean(isGuest))
 
   return <div className="lobby">
     <div ref={lobbyMapRef} className="lobbyMap" aria-hidden="true" />
     <div className="card">
       <div className="cardTop">
         <div className="appMark"><MapPin size={22} /></div>
-        <div className="sessionPill">
-          <span>{authUser.displayName.slice(0, 1)}</span>
-          <div>
-            <b>{authUser.displayName}</b>
-            <small>{getProviderLabel(authUser.provider)} 로그인</small>
+        {authUser ? <>
+          <div className="sessionPill">
+            <span>{authUser.displayName.slice(0, 1)}</span>
+            <div>
+              <b>{authUser.displayName}</b>
+              <small>{getProviderLabel(authUser.provider)} 로그인</small>
+            </div>
           </div>
-        </div>
-        <button className="iconButton logoutButton" onClick={onLogout} title="로그아웃"><LogOut size={19} /></button>
+          <button className="iconButton logoutButton" onClick={onLogout} title="로그아웃"><LogOut size={19} /></button>
+        </> : <button className="loginButton" onClick={onRequireAuth}>Log In</button>}
       </div>
-      <h1>어디가지</h1>
+      <h1>어디가</h1>
       <p>친구들과 함께 여행 장소를 지도에 모으고, 실시간으로 공유하는 협업 여행 지도 서비스</p>
       <div className="tabs" role="tablist">
         <button className={mode === 'find' ? 'active' : ''} onClick={() => { setMode('find'); setError('') }}>방 찾기</button>
@@ -469,7 +489,7 @@ function Lobby({ setSession, authUser, onLogout }) {
       </div>
       {isGuest && <div className="guestNotice">게스트는 방 참가만 가능해요.</div>}
       <div className="formStack">
-        {mode === 'create' && <label><span>방 이름</span><input maxLength={MAX_NAME_LENGTH} placeholder="예: 부산 어디가지" value={form.roomName} onChange={e => setForm({ ...form, roomName: e.target.value })} /></label>}
+        {mode === 'create' && <label><span>방 이름</span><input maxLength={MAX_NAME_LENGTH} placeholder="예: 부산 어디가" value={form.roomName} onChange={e => setForm({ ...form, roomName: e.target.value })} /></label>}
         {mode === 'find' && <div className="roomSearchBlock">
           <label><span>방 검색</span><input placeholder="방 이름 입력" value={roomQuery} onChange={e => { setRoomQuery(e.target.value); setSelectedRoom(null) }} /></label>
           {roomQuery.trim() && <div className="roomSuggestions">
@@ -494,6 +514,8 @@ function Lobby({ setSession, authUser, onLogout }) {
 
 function Room({ session, setSession, authUser, onLogout }) {
   const isGuest = authUser?.isGuest || session.isGuest
+  const profileName = authUser?.displayName || session.username
+  const profileProvider = authUser?.provider || session.provider || 'guest'
   const [messages, setMessages] = useState([])
   const [members, setMembers] = useState([])
   const [places, setPlaces] = useState([])
@@ -1152,7 +1174,7 @@ function Room({ session, setSession, authUser, onLogout }) {
   return <div ref={roomLayoutRef} className={`${chatOpen ? 'room' : 'room chatCollapsed'} mobile-${mobileView}`} style={{ '--chat-width': `${chatWidth}px` }}>
     <aside className="roomList">
       <div className="roomListTop">
-        <div className="brandLockup"><span><MapPin size={18} /></span><b>어디가지</b></div>
+        <div className="brandLockup"><span><MapPin size={18} /></span><b>어디가</b></div>
         <button className="iconButton addRoomButton" onClick={openRoomManager} title="방 추가"><Plus size={21} /></button>
       </div>
       <p className="roomListLabel">내 룸</p>
@@ -1166,10 +1188,10 @@ function Room({ session, setSession, authUser, onLogout }) {
         })}
       </nav>
       <div className="roomProfile">
-        <span>{authUser.displayName.slice(0, 1)}</span>
+        <span>{profileName.slice(0, 1)}</span>
         <div>
-          <b>{authUser.displayName}</b>
-          <small>{getProviderLabel(authUser.provider)}</small>
+          <b>{profileName}</b>
+          <small>{getProviderLabel(profileProvider)}</small>
         </div>
         <button className="iconButton" onClick={onLogout} title="로그아웃"><LogOut size={18} /></button>
       </div>
@@ -1381,7 +1403,7 @@ function Room({ session, setSession, authUser, onLogout }) {
               {roomQuery.trim() && filteredManagerRooms.length === 0 && <p>검색된 방이 없어요.</p>}
             </div>}
           </>}
-          {roomMode === 'create' && <label><span>방 이름</span><input maxLength={MAX_NAME_LENGTH} placeholder="예: 제주 어디가지" value={roomForm.roomName} onChange={e => setRoomForm({ ...roomForm, roomName: e.target.value })} /></label>}
+          {roomMode === 'create' && <label><span>방 이름</span><input maxLength={MAX_NAME_LENGTH} placeholder="예: 제주 어디가" value={roomForm.roomName} onChange={e => setRoomForm({ ...roomForm, roomName: e.target.value })} /></label>}
           <label><span>비밀번호</span><input placeholder="방 비밀번호" type="password" value={roomForm.password} onChange={e => setRoomForm({ ...roomForm, password: e.target.value })} /></label>
         </div>
         {roomError && <div className="error">{roomError}</div>}
