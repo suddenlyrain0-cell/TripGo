@@ -1743,14 +1743,14 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             <button className="iconButton danger" onClick={() => setLeaveConfirmOpen(true)} title="나가기"><LogOut size={21} /></button>
           </div>
         </header>
-        <div className="inviteStrip">
-          <button onClick={copyInviteLink}><Link2 size={17} /> 초대하기</button>
-          {inviteNotice && <span>{inviteNotice}</span>}
-        </div>
         <section className="places">
           <b>추가된 장소</b>
           {renderPlaceStories()}
         </section>
+        <div className="inviteStrip">
+          <button onClick={copyInviteLink}><Link2 size={17} /> 초대하기</button>
+          {inviteNotice && <span>{inviteNotice}</span>}
+        </div>
         <section className="chat" ref={chatRef}>{messages.length > 0 ? messages.map(m => {
           const placeMessage = m.type === 'place_comment' ? parsePlaceMessage(m) : null
           if (placeMessage) {
