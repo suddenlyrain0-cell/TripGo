@@ -460,10 +460,24 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
     await enterRoom(data)
   }
 
+  function submitLobby() {
+    if (mode === 'create') {
+      createRoom()
+      return
+    }
+
+    setError('')
+    const query = roomQuery.trim()
+    if (!query) return setError('입장할 방 이름을 입력해주세요.')
+    if (filteredRooms.length === 0) return setError('검색된 방이 없어요.')
+    if (!selectedRoom) return setError('입장할 방을 목록에서 선택해주세요.')
+    enterRoom(selectedRoom)
+  }
+
   const filteredRooms = rooms
     .filter(room => room.name.toLowerCase().includes(roomQuery.trim().toLowerCase()))
     .slice(0, 5)
-  const primaryDisabled = loading || (mode === 'find' && !selectedRoom) || (mode === 'create' && Boolean(isGuest))
+  const primaryDisabled = loading || (mode === 'create' && Boolean(isGuest))
 
   return <div className="lobby">
     <div ref={lobbyMapRef} className="lobbyMap" aria-hidden="true" />
@@ -506,7 +520,7 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
         <label><span>방 비밀번호</span><input placeholder="비밀번호" type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></label>
       </div>
       {error && <div className="error">{error}</div>}
-      <button className="primary" disabled={primaryDisabled} onClick={() => mode === 'create' ? createRoom() : selectedRoom && enterRoom(selectedRoom)}>{loading ? '준비 중...' : mode === 'create' ? '방 만들고 입장' : '입장하기'}</button>
+      <button className="primary" disabled={primaryDisabled} onClick={submitLobby}>{loading ? '준비 중...' : mode === 'create' ? '방 만들고 입장' : '입장하기'}</button>
     </div>
     {loading && <div className="loadingOverlay"><div className="spinner" /><b>{mode === 'create' ? '방을 만들고 있어요' : '방에 입장하고 있어요'}</b></div>}
   </div>
@@ -857,7 +871,9 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
 
   async function joinRoomFromManager(room) {
     setRoomError('')
-    if (!room) return setRoomError('입장할 방을 선택해주세요.')
+    if (!roomQuery.trim()) return setRoomError('입장할 방 이름을 입력해주세요.')
+    if (!room && filteredManagerRooms.length === 0) return setRoomError('검색된 방이 없어요.')
+    if (!room) return setRoomError('입장할 방을 목록에서 선택해주세요.')
     if (joinedRooms.some(joinedRoom => joinedRoom.id === room.id)) return setRoomError('이미 속한 방입니다.')
     if (!roomForm.password.trim()) return setRoomError('방 비밀번호를 입력해주세요.')
     if (room.password !== roomForm.password) return setRoomError('방 비밀번호가 달라요.')
