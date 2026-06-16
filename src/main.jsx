@@ -60,6 +60,12 @@ function getRouteColor(index) {
   return ROUTE_COLORS[index % ROUTE_COLORS.length]
 }
 
+function buildMapSearchUrl(provider, place) {
+  const query = encodeURIComponent(`${place?.name || ''} ${place?.address || ''}`.trim())
+  if (provider === 'naver') return `https://map.naver.com/p/search/${query}`
+  return `https://map.kakao.com/link/search/${query}`
+}
+
 function buildOAuthUser(authSession) {
   const user = authSession?.user
   if (!user) return null
@@ -1620,6 +1626,10 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         <div className="placeMeta">
           <span>#{selectedSavedPlace.tag}</span>
           <span>{selectedSavedPlace.added_by}님이 등록</span>
+        </div>
+        <div className="placeMapLinks">
+          <a href={buildMapSearchUrl('kakao', selectedSavedPlace)} target="_blank" rel="noreferrer">카카오맵</a>
+          <a href={buildMapSearchUrl('naver', selectedSavedPlace)} target="_blank" rel="noreferrer">네이버맵</a>
         </div>
         <div className="placeMemo">
           <b>메모</b>
