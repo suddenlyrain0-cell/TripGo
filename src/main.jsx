@@ -12,6 +12,7 @@ const ROOM_SESSION_STORAGE_KEY = 'trip_room_session'
 const SEARCH_STORAGE_KEY = 'trip_recent_searches'
 const PLACE_ORDER_STORAGE_KEY = 'trip_place_order'
 const ROUTE_COLORS = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#0a84ff', '#5856d6', '#af52de', '#ff2d55']
+const MESSAGE_REACTIONS = ['❤️', '👍', '😂']
 const BLOCKED_WORDS = ['시발', '씨발', '병신', '좆', '개새끼', 'fuck', 'shit']
 
 function safeParseJson(value) {
@@ -606,6 +607,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const profileName = authUser?.displayName || session.username
   const profileProvider = authUser?.provider || session.provider || 'guest'
   const [messages, setMessages] = useState([])
+  const [messageReactions, setMessageReactions] = useState([])
   const [members, setMembers] = useState([])
   const [places, setPlaces] = useState([])
   const [placeComments, setPlaceComments] = useState([])
@@ -645,6 +647,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const [locationNotice, setLocationNotice] = useState('')
   const [placeNotice, setPlaceNotice] = useState('')
   const [inviteNotice, setInviteNotice] = useState('')
+  const [activeReactionMessageId, setActiveReactionMessageId] = useState(null)
   const mapRef = useRef(null)
   const mapAreaRef = useRef(null)
   const mapObj = useRef(null)
@@ -655,7 +658,9 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const kakaoRef = useRef(null)
   const chatRef = useRef(null)
   const placeDragRef = useRef({ timer: null, id: null, active: false, targetId: null })
+  const messagePressRef = useRef({ timer: null, active: false })
   const suppressStoryClickRef = useRef(false)
+  const suppressMessageClickRef = useRef(false)
   const placeOrderSaveBlockedRef = useRef(false)
   const chatOpenRef = useRef(chatOpen)
   const mobileViewRef = useRef(mobileView)
@@ -748,6 +753,17 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'place_comments', filter: `room_id=eq.${session.roomId}` }, payload => {
         setPlaceComments(prev => prev.some(comment => comment.id === payload.new.id) ? prev : [...prev, payload.new])
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions', filter: `room_id=eq.${session.roomId}` }, payload => {
+        if (payload.eventType === 'INSERT') {
+          setMessageReactions(prev => prev.some(reaction => reaction.id === payload.new.id) ? prev : [...prev, payload.new])
+        }
+        if (payload.eventType === 'UPDATE') {
+          setMessageReactions(prev => prev.map(reaction => reaction.id === payload.new.id ? payload.new : reaction))
+        }
+        if (payload.eventType === 'DELETE') {
+          setMessageReactions(prev => prev.filter(reaction => reaction.id !== payload.old.id))
+        }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'room_members', filter: `room_id=eq.${session.roomId}` }, loadMembers)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${session.roomId}` }, async payload => {
@@ -943,14 +959,16 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   }, [selectedPlace, mapReady])
 
   async function loadInitial() {
-    const [{ data: msg }, { data: mem }, { data: plc }, { data: room }, { data: comments }] = await Promise.all([
+    const [{ data: msg }, { data: mem }, { data: plc }, { data: room }, { data: comments }, { data: reactions }] = await Promise.all([
       supabase.from('messages').select('*').eq('room_id', session.roomId).order('created_at'),
       supabase.from('room_members').select('*').eq('room_id', session.roomId).order('created_at'),
       supabase.from('places').select('*').eq('room_id', session.roomId).order('created_at'),
       supabase.from('rooms').select('*').eq('id', session.roomId).single(),
-      supabase.from('place_comments').select('*').eq('room_id', session.roomId).order('created_at')
+      supabase.from('place_comments').select('*').eq('room_id', session.roomId).order('created_at'),
+      supabase.from('message_reactions').select('*').eq('room_id', session.roomId).order('created_at')
     ])
     setMessages(msg || [])
+    setMessageReactions(reactions || [])
     setMembers(mem || [])
     setPlaces(orderPlaces(plc || []))
     setPlaceComments(comments || [])
@@ -1573,6 +1591,114 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     setMobileView('map')
   }
 
+  function getMessageReactionSummary(messageId) {
+    return MESSAGE_REACTIONS
+      .map(emoji => {
+        const items = messageReactions.filter(reaction => reaction.message_id === messageId && reaction.emoji === emoji)
+        return { emoji, count: items.length, mine: items.some(reaction => reaction.username === session.username) }
+      })
+      .filter(item => item.count > 0)
+  }
+
+  function getMyMessageReaction(messageId) {
+    return messageReactions.find(reaction => reaction.message_id === messageId && reaction.username === session.username)
+  }
+
+  function openReactionPicker(messageId) {
+    setActiveReactionMessageId(prev => prev === messageId ? null : messageId)
+  }
+
+  function handleMessageClick(messageId) {
+    if (isMobileViewport() || suppressMessageClickRef.current) return
+    openReactionPicker(messageId)
+  }
+
+  function startMessageLongPress(event, messageId) {
+    if (event.pointerType === 'mouse') return
+    if (messagePressRef.current.timer) clearTimeout(messagePressRef.current.timer)
+    messagePressRef.current = {
+      active: false,
+      timer: setTimeout(() => {
+        messagePressRef.current.active = true
+        suppressMessageClickRef.current = true
+        setActiveReactionMessageId(messageId)
+      }, 420)
+    }
+  }
+
+  function finishMessageLongPress() {
+    if (messagePressRef.current.timer) clearTimeout(messagePressRef.current.timer)
+    const wasActive = messagePressRef.current.active
+    messagePressRef.current = { timer: null, active: false }
+    if (wasActive) {
+      setTimeout(() => {
+        suppressMessageClickRef.current = false
+      }, 120)
+    }
+  }
+
+  async function toggleMessageReaction(message, emoji) {
+    const currentReaction = getMyMessageReaction(message.id)
+    setActiveReactionMessageId(null)
+
+    if (currentReaction?.emoji === emoji) {
+      setMessageReactions(prev => prev.filter(reaction => reaction.id !== currentReaction.id))
+      await supabase.from('message_reactions').delete().eq('id', currentReaction.id)
+      return
+    }
+
+    if (currentReaction) {
+      const optimistic = { ...currentReaction, emoji }
+      setMessageReactions(prev => prev.map(reaction => reaction.id === currentReaction.id ? optimistic : reaction))
+      await supabase.from('message_reactions').update({ emoji }).eq('id', currentReaction.id)
+      return
+    }
+
+    const optimisticReaction = {
+      id: `temp-${Date.now()}`,
+      room_id: session.roomId,
+      message_id: message.id,
+      username: session.username,
+      emoji,
+      created_at: new Date().toISOString()
+    }
+    setMessageReactions(prev => [...prev, optimisticReaction])
+    const { data, error } = await supabase.from('message_reactions').insert({
+      room_id: session.roomId,
+      message_id: message.id,
+      username: session.username,
+      emoji
+    }).select().single()
+
+    if (error) {
+      setMessageReactions(prev => prev.filter(reaction => reaction.id !== optimisticReaction.id))
+      return
+    }
+    if (data) {
+      setMessageReactions(prev => prev
+        .map(reaction => reaction.id === optimisticReaction.id ? data : reaction)
+        .filter((reaction, index, array) => array.findIndex(item => item.id === reaction.id) === index))
+    }
+  }
+
+  function renderReactionControls(message) {
+    const summary = getMessageReactionSummary(message.id)
+    return <>
+      {activeReactionMessageId === message.id && <div className="reactionPicker" onClick={event => event.stopPropagation()}>
+        {MESSAGE_REACTIONS.map(emoji => {
+          const active = getMyMessageReaction(message.id)?.emoji === emoji
+          return <button key={emoji} className={active ? 'active' : ''} onClick={() => toggleMessageReaction(message, emoji)}>{emoji}</button>
+        })}
+      </div>}
+      {summary.length > 0 && <div className="reactionSummary">
+        {summary.map(item => <button key={item.emoji} className={item.mine ? 'mine' : ''} onClick={event => { event.stopPropagation(); toggleMessageReaction(message, item.emoji) }}>
+          <span>{item.emoji}</span>
+          <b>{item.count}</b>
+        </button>)}
+      </div>}
+    </>
+  }
+
   async function copyInviteLink() {
     const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${session.roomId}`
     try {
@@ -1790,13 +1916,34 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           <section className="chat" ref={chatRef}>{messages.length > 0 ? messages.map(m => {
           const placeMessage = m.type === 'place_comment' ? parsePlaceMessage(m) : null
           if (placeMessage) {
-            return <div key={m.id} className="system msg placeMessage">
+            return <div
+              key={m.id}
+              className="system msg placeMessage"
+              onClick={() => handleMessageClick(m.id)}
+              onPointerDown={event => startMessageLongPress(event, m.id)}
+              onPointerUp={finishMessageLongPress}
+              onPointerCancel={finishMessageLongPress}
+              onPointerLeave={finishMessageLongPress}
+            >
               <b>알림</b>
               <p>{placeMessage.username}님이 {placeMessage.placeName}에 댓글을 남겼어요.</p>
-              <button onClick={() => openPlaceFromMessage(placeMessage.placeId)}>확인하러 가기</button>
+              {renderReactionControls(m)}
+              <button onClick={event => { event.stopPropagation(); openPlaceFromMessage(placeMessage.placeId) }}>확인하러 가기</button>
             </div>
           }
-          return <div key={m.id} className={m.type === 'system' ? 'system msg' : 'msg'}><b>{m.username}</b><p>{m.content}</p></div>
+          return <div
+            key={m.id}
+            className={m.type === 'system' ? 'system msg' : 'msg'}
+            onClick={() => handleMessageClick(m.id)}
+            onPointerDown={event => startMessageLongPress(event, m.id)}
+            onPointerUp={finishMessageLongPress}
+            onPointerCancel={finishMessageLongPress}
+            onPointerLeave={finishMessageLongPress}
+          >
+            <b>{m.username}</b>
+            <p>{m.content}</p>
+            {renderReactionControls(m)}
+          </div>
         }) : <div className="emptyChat">아직 채팅이 없어요.</div>}</section>
         </div>
         <footer><button className="roundButton" title="이미지"><Image size={21} /></button><input placeholder="메시지 입력..." value={chat} onChange={e => setChat(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} /><button className="roundButton send" onClick={sendMessage} title="전송"><Send size={20} /></button></footer>

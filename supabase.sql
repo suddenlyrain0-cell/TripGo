@@ -48,11 +48,22 @@ create table if not exists place_comments (
   created_at timestamptz default now()
 );
 
+create table if not exists message_reactions (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid references rooms(id) on delete cascade,
+  message_id uuid references messages(id) on delete cascade,
+  username text not null,
+  emoji text not null,
+  created_at timestamptz default now(),
+  unique(message_id, username)
+);
+
 alter table rooms enable row level security;
 alter table room_members enable row level security;
 alter table messages enable row level security;
 alter table places enable row level security;
 alter table place_comments enable row level security;
+alter table message_reactions enable row level security;
 
 create policy "public read rooms" on rooms for select using (true);
 create policy "public insert rooms" on rooms for insert with check (true);
@@ -68,3 +79,7 @@ create policy "public insert places" on places for insert with check (true);
 create policy "public update places" on places for update using (true) with check (true);
 create policy "public read place comments" on place_comments for select using (true);
 create policy "public insert place comments" on place_comments for insert with check (true);
+create policy "public read message reactions" on message_reactions for select using (true);
+create policy "public insert message reactions" on message_reactions for insert with check (true);
+create policy "public update message reactions" on message_reactions for update using (true) with check (true);
+create policy "public delete message reactions" on message_reactions for delete using (true);
