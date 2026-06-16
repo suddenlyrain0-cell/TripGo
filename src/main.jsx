@@ -773,7 +773,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
 
     try {
       const basePoint = toPoint.call(projection, basePosition)
-      const threshold = 40
+      const threshold = 34
       const cluster = list
         .map((candidate, candidateIndex) => {
           const position = new maps.LatLng(Number(candidate.lat), Number(candidate.lng))
@@ -787,7 +787,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       if (cluster.length < 2) return basePosition
 
       const clusterPosition = cluster.findIndex(item => item.candidateIndex === index)
-      const radius = 10 + Math.min(Math.max(mapLevel - 9, 0), 4) * 2
+      const radius = 6 + Math.min(Math.max(mapLevel - 9, 0), 4)
       const angle = -Math.PI / 2 + (Math.PI * 2 * clusterPosition) / cluster.length
       const scatteredPoint = new maps.Point(
         basePoint.x + Math.cos(angle) * radius,
@@ -1941,7 +1941,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           <div>
             <h2><span className="mobileBrandMark"><LogoMark /></span>어디가</h2>
           </div>
-          <button className="iconButton mobileHeaderLogout" onClick={onLogout} title="로그아웃"><LogOut size={18} /></button>
+          <button className="iconButton mobileHeaderLogout" onClick={() => setLeaveConfirmOpen(true)} title="나가기"><LogOut size={18} /></button>
         </header>
         <section className="places">
           <b>추가된 장소</b>

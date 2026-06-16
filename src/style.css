@@ -390,6 +390,8 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .chatCollapsed .side{width:58px}
 }
 @media(max-width:720px){
+  .modalBackdrop{place-items:center;align-items:center;padding-bottom:12dvh}
+  .loadingOverlay{align-content:center;padding-bottom:12dvh}
   .room,.room.chatCollapsed{grid-template-columns:1fr;height:100dvh;padding-bottom:0}
   .mapArea{grid-column:1;grid-row:1;height:100dvh}
   .map{height:100%}
