@@ -580,8 +580,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const mapObj = useRef(null)
   const markersRef = useRef([])
   const selectedMarkerRef = useRef(null)
-  const routeLineRef = useRef(null)
-  const orderOverlaysRef = useRef([])
+  const routeLinesRef = useRef([])
   const currentMarkerRef = useRef(null)
   const kakaoRef = useRef(null)
   const chatRef = useRef(null)
@@ -623,6 +622,10 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
 
   const orderedPlaces = orderPlaces(places)
 
+  function getPlaceRouteIndex(placeId) {
+    return orderedPlaces.findIndex(place => place.id === placeId)
+  }
+
   function isMobileViewport() {
     return window.matchMedia?.('(max-width: 720px)').matches
   }
@@ -630,7 +633,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   function liftMapForMobileSheet() {
     if (!isMobileViewport() || !mapObj.current) return
     setTimeout(() => {
-      if (mapObj.current?.panBy) mapObj.current.panBy(0, -120)
+      if (mapObj.current?.panBy) mapObj.current.panBy(0, 132)
     }, 140)
   }
 
@@ -795,62 +798,47 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   useEffect(() => {
     if (!mapReady || !kakaoRef.current) return
     markersRef.current.forEach(m => m.setMap(null))
-    markersRef.current = places.map(place => {
-      const marker = new kakaoRef.current.maps.Marker({ position: new kakaoRef.current.maps.LatLng(place.lat, place.lng), map: mapObj.current })
-      kakaoRef.current.maps.event.addListener(marker, 'click', () => focusPlace(place, { openDetail: true }))
-      return marker
+    markersRef.current = orderedPlaces.map((place, index) => {
+      const markerContent = document.createElement('button')
+      markerContent.type = 'button'
+      markerContent.className = 'routeMapPin'
+      markerContent.style.setProperty('--route-color', getRouteColor(index))
+      markerContent.title = `${index + 1}번째 장소: ${place.name}`
+      markerContent.innerHTML = '<span></span>'
+      markerContent.addEventListener('click', event => {
+        event.stopPropagation()
+        focusPlace(place, { openDetail: true })
+      })
+      return new kakaoRef.current.maps.CustomOverlay({
+        position: new kakaoRef.current.maps.LatLng(place.lat, place.lng),
+        content: markerContent,
+        yAnchor: 1,
+        zIndex: 9,
+        map: mapObj.current
+      })
     })
   }, [places, mapReady])
 
   useEffect(() => {
     if (!mapReady || !kakaoRef.current || !mapObj.current) return
-    if (routeLineRef.current) {
-      routeLineRef.current.setMap(null)
-      routeLineRef.current = null
-    }
-    orderOverlaysRef.current.forEach(overlay => overlay.setMap(null))
-    orderOverlaysRef.current = []
+    routeLinesRef.current.forEach(line => line.setMap(null))
+    routeLinesRef.current = []
 
     const positions = orderedPlaces.map(place => new kakaoRef.current.maps.LatLng(Number(place.lat), Number(place.lng)))
-    if (positions.length > 1) {
-      routeLineRef.current = new kakaoRef.current.maps.Polyline({
+    routeLinesRef.current = positions.slice(0, -1).map((position, index) => {
+      return new kakaoRef.current.maps.Polyline({
         map: mapObj.current,
-        path: positions,
+        path: [position, positions[index + 1]],
         strokeWeight: 3,
-        strokeColor: '#5f6368',
+        strokeColor: getRouteColor(index),
         strokeOpacity: 0.72,
         strokeStyle: 'dash'
-      })
-    }
-
-    orderOverlaysRef.current = orderedPlaces.map((place, index) => {
-      const badge = document.createElement('button')
-      badge.type = 'button'
-      badge.className = 'routeOrderBadge'
-      badge.style.setProperty('--route-color', getRouteColor(index))
-      badge.textContent = String(index + 1)
-      badge.title = `${index + 1}번째 장소: ${place.name}`
-      badge.addEventListener('click', event => {
-        event.stopPropagation()
-        focusPlace(place, { openDetail: true })
-      })
-      return new kakaoRef.current.maps.CustomOverlay({
-        position: positions[index],
-        content: badge,
-        xAnchor: 0.16,
-        yAnchor: 1.28,
-        zIndex: 12,
-        map: mapObj.current
       })
     })
 
     return () => {
-      if (routeLineRef.current) {
-        routeLineRef.current.setMap(null)
-        routeLineRef.current = null
-      }
-      orderOverlaysRef.current.forEach(overlay => overlay.setMap(null))
-      orderOverlaysRef.current = []
+      routeLinesRef.current.forEach(line => line.setMap(null))
+      routeLinesRef.current = []
     }
   }, [places, mapReady])
 
@@ -1171,6 +1159,8 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     const markerContent = document.createElement('button')
     markerContent.type = 'button'
     markerContent.className = 'selectedMapPin savedPlacePin'
+    const routeIndex = getPlaceRouteIndex(place.id)
+    markerContent.style.setProperty('--route-color', getRouteColor(routeIndex >= 0 ? routeIndex : 0))
     markerContent.title = `${place.name} 상세 다시 열기`
     markerContent.innerHTML = '<span></span>'
     markerContent.addEventListener('click', event => {
@@ -1509,7 +1499,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           onPointerCancel={finishPlaceLongPress}
           title={`${p.name} 위치로 이동`}
         >
-        <span className="placeStoryRing">
+        <span className="placeStoryRing" style={{ '--route-color': getRouteColor(index) }}>
           <MapPin size={22} />
           <em className="placeOrderBadge" style={{ '--route-color': getRouteColor(index) }}>{index + 1}</em>
         </span>
