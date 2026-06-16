@@ -277,7 +277,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .places b{font-size:15px}
 .placeStoryScroller{display:flex;gap:12px;margin-top:12px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .placeStoryScroller::-webkit-scrollbar{height:0}
-.placeStory{flex:0 0 72px;display:grid;justify-items:center;gap:5px;text-align:center;background:transparent;color:#1d1d1f;padding:0;border-radius:18px;scroll-snap-align:start;touch-action:pan-x;cursor:grab}
+.placeStory{flex:0 0 72px;display:grid;justify-items:center;gap:5px;text-align:center;background:transparent;color:#1d1d1f;padding:0;border-radius:18px;scroll-snap-align:start;touch-action:pan-x;cursor:grab;transition:transform .2s ease,opacity .2s ease}
 .placeStory:active{cursor:grabbing}
 .addPlaceStory{display:none}
 .placeStory:hover .placeStoryRing{transform:translateY(-1px);box-shadow:0 12px 28px rgba(10,132,255,.22)}

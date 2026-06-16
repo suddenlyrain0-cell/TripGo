@@ -636,6 +636,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [selectedSavedPlace, setSelectedSavedPlace] = useState(null)
   const [focusedPlaceId, setFocusedPlaceId] = useState(null)
+  const [dragPreviewPlaces, setDragPreviewPlaces] = useState(null)
   const [placeComment, setPlaceComment] = useState('')
   const [tag, setTag] = useState('관광')
   const [memo, setMemo] = useState('')
@@ -690,6 +691,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   }
 
   const orderedPlaces = orderPlaces(places)
+  const displayPlaces = dragPreviewPlaces || orderedPlaces
 
   function getPlaceRouteIndex(placeId) {
     return orderedPlaces.findIndex(place => place.id === placeId)
@@ -1476,19 +1478,48 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     persistPlaceOrder(withOrder)
   }
 
+  function previewPlaceOrder(sourceId, targetId) {
+    if (!sourceId || !targetId) return
+    const basePlaces = dragPreviewPlaces || orderedPlaces
+    const sourceIndex = basePlaces.findIndex(place => place.id === sourceId)
+    const targetIndex = basePlaces.findIndex(place => place.id === targetId)
+    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return
+
+    const nextPreview = [...basePlaces]
+    const [movedPlace] = nextPreview.splice(sourceIndex, 1)
+    nextPreview.splice(targetIndex, 0, movedPlace)
+    setDragPreviewPlaces(nextPreview)
+  }
+
   function handlePlaceDragStart(event, placeId) {
     placeDragRef.current = { timer: null, id: placeId, active: true, targetId: placeId }
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', placeId)
+    setDragPreviewPlaces(orderedPlaces)
     setTimeout(() => {
       setFocusedPlaceId(placeId)
     }, 0)
   }
 
+  function handlePlaceDragOver(event, targetId) {
+    event.preventDefault()
+    const sourceId = event.dataTransfer.getData('text/plain') || placeDragRef.current.id
+    if (!sourceId || sourceId === targetId || placeDragRef.current.targetId === targetId) return
+    placeDragRef.current.targetId = targetId
+    previewPlaceOrder(sourceId, targetId)
+  }
+
   function handlePlaceDrop(event, targetId) {
     event.preventDefault()
     const sourceId = event.dataTransfer.getData('text/plain') || placeDragRef.current.id
-    reorderPlaces(sourceId, targetId)
+    const finalTargetId = placeDragRef.current.targetId || targetId
+    reorderPlaces(sourceId, finalTargetId)
+    setDragPreviewPlaces(null)
+    placeDragRef.current = { timer: null, id: null, active: false, targetId: null }
+  }
+
+  function handlePlaceDragEnd() {
+    setDragPreviewPlaces(null)
     placeDragRef.current = { timer: null, id: null, active: false, targetId: null }
   }
 
@@ -1505,6 +1536,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         placeDragRef.current.active = true
         placeDragRef.current.targetId = placeId
         suppressStoryClickRef.current = true
+        setDragPreviewPlaces(orderedPlaces)
         setFocusedPlaceId(placeId)
       }, 360),
       id: placeId,
@@ -1517,8 +1549,9 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     if (!placeDragRef.current.active) return
     const element = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-place-id]')
     const nextTargetId = element?.dataset.placeId
-    if (nextTargetId) {
+    if (nextTargetId && placeDragRef.current.targetId !== nextTargetId) {
       placeDragRef.current.targetId = nextTargetId
+      previewPlaceOrder(placeDragRef.current.id, nextTargetId)
       setFocusedPlaceId(nextTargetId)
     }
   }
@@ -1527,6 +1560,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     const { id, active, targetId } = placeDragRef.current
     clearPlacePressTimer()
     if (active) reorderPlaces(id, targetId)
+    setDragPreviewPlaces(null)
     placeDragRef.current = { timer: null, id: null, active: false, targetId: null }
     setTimeout(() => {
       suppressStoryClickRef.current = false
@@ -1564,15 +1598,16 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           <strong>장소 추가</strong>
           <small>검색</small>
         </button>
-        {orderedPlaces.map((p, index) => <button
+        {displayPlaces.map((p, index) => <button
           key={p.id}
           className={focusedPlaceId === p.id ? 'placeStory active' : 'placeStory'}
           data-place-id={p.id}
           draggable
           onClick={() => handlePlaceStoryClick(p)}
           onDragStart={event => handlePlaceDragStart(event, p.id)}
-          onDragOver={event => event.preventDefault()}
+          onDragOver={event => handlePlaceDragOver(event, p.id)}
           onDrop={event => handlePlaceDrop(event, p.id)}
+          onDragEnd={handlePlaceDragEnd}
           onPointerDown={event => startPlaceLongPress(event, p.id)}
           onPointerMove={movePlaceLongPress}
           onPointerUp={finishPlaceLongPress}
