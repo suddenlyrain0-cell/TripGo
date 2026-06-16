@@ -226,7 +226,8 @@ body.resizingChat .room{transition:none}
 .popularPlaces>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .popularPlaces button{min-height:56px;display:grid;grid-template-columns:30px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;column-gap:9px;text-align:left;background:rgba(255,255,255,.34);border:1px solid rgba(255,255,255,.58);border-radius:14px;padding:8px 10px;color:#1d1d1f;backdrop-filter:blur(18px) saturate(1.25)}
 .popularPlaces button:hover{background:rgba(255,255,255,.62)}
-.popularPlaces button span{grid-row:1 / 3;width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:rgba(10,132,255,.12);color:#0a84ff;margin:0}
+.popularPlaces button span{grid-row:1 / 3;width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:transparent;color:#8e8e93;margin:0}
+.placeResultIcon{width:100%;height:100%;display:block;object-fit:contain}
 .popularPlaces strong{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px;font-weight:850}
 .popularPlaces small{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#6e6e73;font-size:12px;font-weight:720}
 .addPanel,.placeDetailPanel{bottom:22px;left:50%;transform:translateX(-50%);display:grid;gap:12px;padding:10px 16px 16px;border-radius:26px}
@@ -433,13 +434,11 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .placeDetailPanel .placeCommentForm input,.placeDetailPanel .placeCommentForm button{height:40px}
   .locateButton{right:14px;bottom:calc(76px + env(safe-area-inset-bottom))}
   .placeNotice{bottom:calc(136px + env(safe-area-inset-bottom));width:calc(100% - 36px);text-align:center}
-  .mobileTabBar{position:fixed;z-index:30;left:0;right:0;bottom:0;height:calc(64px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:6px 8px calc(6px + env(safe-area-inset-bottom));border-radius:0;background:linear-gradient(180deg,rgba(255,255,255,.76),rgba(255,255,255,.58));border-top:1px solid rgba(255,255,255,.8);box-shadow:0 -10px 34px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.82);backdrop-filter:blur(34px) saturate(1.55)}
-  .mobileTabBar button{--tab-color:#ff3b30;position:relative;display:grid;place-items:center;align-content:center;gap:2px;border-radius:16px;background:rgba(255,255,255,.12);color:#6e6e73;font-weight:850;overflow:hidden}
+  .mobileTabBar{position:fixed;z-index:30;left:0;right:0;bottom:0;height:calc(64px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:6px 8px calc(6px + env(safe-area-inset-bottom));border-radius:0;background:rgba(255,255,255,.82);border-top:1px solid rgba(0,0,0,.08);box-shadow:0 -8px 26px rgba(0,0,0,.12);backdrop-filter:blur(28px) saturate(1.35)}
+  .mobileTabBar button{--tab-color:#ff3b30;position:relative;display:grid;place-items:center;align-content:center;gap:2px;border-radius:16px;background:transparent;color:#6e6e73;font-weight:850}
   .mobileTabBar button:nth-child(2){--tab-color:#ff9500}
   .mobileTabBar button:nth-child(3){--tab-color:#ffcc00}
-  .mobileTabBar button.active{background:linear-gradient(135deg,color-mix(in srgb,var(--tab-color) 88%,white 8%),color-mix(in srgb,var(--tab-color) 74%,#1d1d1f 10%));color:#fff;box-shadow:0 12px 28px color-mix(in srgb,var(--tab-color) 28%,transparent),inset 0 1px 0 rgba(255,255,255,.38);border:1px solid rgba(255,255,255,.42)}
-  .mobileTabBar button.active:before{content:"";position:absolute;inset:1px;border-radius:15px;background:linear-gradient(180deg,rgba(255,255,255,.34),transparent 58%);pointer-events:none}
-  .mobileTabBar button.active svg,.mobileTabBar button.active span{position:relative;z-index:1}
+  .mobileTabBar button.active{background:var(--tab-color);color:#fff}
   .mobileTabBar span{font-size:11px;line-height:1}
   .mobileTabBar em{position:absolute;right:16px;top:5px;min-width:18px;height:18px;border-radius:99px;background:#ff3b30;color:#fff;border:2px solid #fff;font-size:10px;font-style:normal;display:grid;place-items:center;padding:0 4px}
   .card{padding:24px}.card h1{font-size:38px}.formStack label{grid-template-columns:1fr;padding:9px 13px}.formStack label span{font-size:13px}.tagPills{grid-template-columns:repeat(3,1fr)}
@@ -473,7 +472,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mobileSearchBody .popularPlaces button{min-height:58px;background:rgba(255,255,255,.82);border-color:rgba(0,0,0,.06)}
   .mobileSearchResults{display:grid;gap:8px}
   .mobileSearchResults button{min-height:58px;display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:10px;padding:9px 10px;border-radius:16px;background:rgba(255,255,255,.82);text-align:left;color:#1d1d1f;border:1px solid rgba(0,0,0,.06)}
-  .mobileSearchResults button>span{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:rgba(10,132,255,.12);color:#0a84ff}
+  .mobileSearchResults button>span{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:transparent;color:#8e8e93}
   .mobileSearchResults b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
   .mobileSearchResults small{display:block;margin-top:3px;color:#6e6e73;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
   .mobileSearchResults p{margin:12px 0;color:#8e8e93;font-weight:800}

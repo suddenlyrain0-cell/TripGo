@@ -73,6 +73,10 @@ function LogoMark({ className = '' }) {
   return <img className={className ? `brandLogo ${className}` : 'brandLogo'} src="/wherego-logo.png" alt="" aria-hidden="true" />
 }
 
+function PlaceIcon() {
+  return <img className="placeResultIcon" src="/wherego-place-icon.png" alt="" aria-hidden="true" />
+}
+
 function buildMapSearchUrl(provider, place) {
   const query = encodeURIComponent(`${place?.name || ''} ${place?.address || ''}`.trim())
   if (provider === 'naver') return `https://map.naver.com/p/search/${query}`
@@ -1238,7 +1242,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       <b>최근 인기 장소</b>
       <div>
         {POPULAR_TRAVEL_PLACES.map(place => <button key={place.name} onClick={() => searchPopularPlace(place)}>
-          <span><MapPin size={16} /></span>
+          <span><PlaceIcon /></span>
           <strong>{place.name}</strong>
           <small>{place.area}</small>
         </button>)}
@@ -1889,7 +1893,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           {mobileSearchInput.trim().length >= 2 && <div className="mobileSearchResults">
             {results.length > 0
               ? results.map(result => <button key={result.id} onClick={() => selectSearchResult(result)}>
-                <span><MapPin size={18} /></span>
+                <span><PlaceIcon /></span>
                 <div>
                   <b>{result.place_name}</b>
                   <small>{result.road_address_name || result.address_name}</small>
