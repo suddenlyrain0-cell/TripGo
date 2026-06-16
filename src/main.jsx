@@ -118,14 +118,12 @@ function App() {
 
       const oauthUser = buildOAuthUser(data?.session)
       const storedUser = safeParseJson(localStorage.getItem(AUTH_STORAGE_KEY))
-      const nextUser = oauthUser || (storedUser?.isGuest ? storedUser : null)
+      const nextUser = oauthUser || storedUser
 
       if (nextUser) {
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextUser))
       } else {
-        localStorage.removeItem(AUTH_STORAGE_KEY)
-        localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
-        setSession(null)
+        setSession(prev => prev)
       }
 
       setAuthUser(nextUser)
@@ -133,11 +131,12 @@ function App() {
     }
 
     loadAuthUser()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       const nextUser = buildOAuthUser(nextSession)
       if (!nextUser) {
         const storedUser = safeParseJson(localStorage.getItem(AUTH_STORAGE_KEY))
         if (storedUser?.isGuest) return
+        if (event !== 'SIGNED_OUT') return
         localStorage.removeItem(AUTH_STORAGE_KEY)
         localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
         setAuthUser(null)
@@ -1927,8 +1926,8 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             >
               <b>알림</b>
               <p>{placeMessage.username}님이 {placeMessage.placeName}에 댓글을 남겼어요.</p>
-              {renderReactionControls(m)}
               <button onClick={event => { event.stopPropagation(); openPlaceFromMessage(placeMessage.placeId) }}>확인하러 가기</button>
+              {renderReactionControls(m)}
             </div>
           }
           return <div
