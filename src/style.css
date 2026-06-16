@@ -393,7 +393,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mobileMapTop .addPlaceStory .placeStoryRing{background:rgba(118,118,128,.2);border-color:rgba(255,255,255,.72);color:#3a3a3c;backdrop-filter:blur(18px) saturate(1.25)}
   .mobileMapTop .emptyState{display:none}
   .placeSheetOpen .mobileMapTop .places{display:none}
-  .roomList{display:none;position:absolute;z-index:12;inset:0;width:auto;height:auto;border-radius:0;padding:18px;background:rgba(242,242,247,.92)}
+  .roomList{display:none;position:absolute;z-index:12;top:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));left:0;width:auto;height:auto;border-radius:0;padding:18px;background:rgba(242,242,247,.92)}
   .mobile-rooms .roomList{display:grid}
   .mobile-rooms .brandLockup b,.mobile-rooms .roomListLabel,.mobile-rooms .roomItem span:not(.roomAvatar){display:block}
   .mobile-rooms .addRoomButton{display:grid}
