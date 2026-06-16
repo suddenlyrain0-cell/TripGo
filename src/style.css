@@ -228,7 +228,13 @@ body.resizingChat .room{transition:none}
 .placeMeta{display:flex;flex-wrap:wrap;gap:8px}
 .placeMeta span{min-height:30px;display:flex;align-items:center;padding:0 11px;border-radius:15px;background:rgba(118,118,128,.13);color:#3a3a3c;font-size:13px;font-weight:820}
 .placeMapLinks{display:flex;gap:7px;margin-top:-2px}
-.placeMapLinks a{min-height:32px;display:inline-flex;align-items:center;justify-content:center;padding:0 12px;border-radius:16px;background:rgba(255,255,255,.58);border:1px solid rgba(0,0,0,.06);color:#0a84ff;font-size:13px;font-weight:850;text-decoration:none}
+.placeMapLinks a{min-height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;border-radius:16px;background:rgba(255,255,255,.58);border:1px solid rgba(0,0,0,.06);color:#0a84ff;font-size:13px;font-weight:850;text-decoration:none}
+.placeMapLinks a span{width:18px;height:18px;border-radius:6px;display:grid;place-items:center;font-size:11px;font-weight:950;line-height:1}
+.placeMapLinks a span svg{width:16px;height:16px}
+.placeMapLinks .kakaoMapLink{color:#1d1d1f;background:rgba(254,229,0,.22);border-color:rgba(254,229,0,.42)}
+.placeMapLinks .kakaoMapLink span{background:#fee500;color:#1d1d1f}
+.placeMapLinks .naverMapLink{color:#03c75a;background:rgba(3,199,90,.1);border-color:rgba(3,199,90,.22)}
+.placeMapLinks .naverMapLink span{background:#03c75a;color:#fff}
 .placeMapLinks a:hover{background:#fff;transform:translateY(-1px)}
 .placeMemo{padding:12px 13px;border-radius:17px;background:rgba(242,242,247,.62)}
 .placeMemo b,.placeComments>b{display:block;font-size:13px;color:#6e6e73;margin-bottom:6px}
@@ -339,6 +345,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mobileMapTop .sideHeader{min-height:50px;padding:8px 16px 6px;background:transparent}
   .mobileMapTop .sideHeader h2{font-size:19px;white-space:normal;line-height:1.05}
   .mobileMapTop .sideHeader h2{display:flex;align-items:center;gap:9px}
+  .mobileHeaderLogout{width:32px;height:32px;border-radius:11px;background:rgba(255,255,255,.5);color:#6e6e73;border:1px solid rgba(255,255,255,.66);box-shadow:0 8px 18px rgba(0,0,0,.06)}
   .mobileBrandMark{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#0a84ff;color:#fff;box-shadow:0 8px 18px rgba(10,132,255,.22)}
   .mobileMapTop .sideHeader p{font-size:13px}
   .mobileMapTop .places{padding:4px 16px 3px;border-bottom:0}
@@ -348,7 +355,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mobileMapTop .addPlaceStory{display:grid}
   .mobileMapTop .addPlaceStory .placeStoryRing{background:rgba(118,118,128,.2);border-color:rgba(255,255,255,.72);color:#3a3a3c;backdrop-filter:blur(18px) saturate(1.25)}
   .mobileMapTop .emptyState{display:none}
-  .placeSheetOpen .mobileMapTop{display:none}
+  .placeSheetOpen .mobileMapTop .places{display:none}
   .roomList{display:none;position:absolute;z-index:12;inset:0;width:auto;height:auto;border-radius:0;padding:18px;background:rgba(242,242,247,.92)}
   .mobile-rooms .roomList{display:grid}
   .mobile-rooms .brandLockup b,.mobile-rooms .roomListLabel,.mobile-rooms .roomItem span:not(.roomAvatar){display:block}

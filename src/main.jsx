@@ -1548,6 +1548,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           <div>
             <h2><span className="mobileBrandMark"><MapPin size={17} /></span>어디가</h2>
           </div>
+          <button className="iconButton mobileHeaderLogout" onClick={onLogout} title="로그아웃"><LogOut size={18} /></button>
         </header>
         <section className="places">
           <b>추가된 장소</b>
@@ -1628,8 +1629,8 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           <span>{selectedSavedPlace.added_by}님이 등록</span>
         </div>
         <div className="placeMapLinks">
-          <a href={buildMapSearchUrl('kakao', selectedSavedPlace)} target="_blank" rel="noreferrer">카카오맵</a>
-          <a href={buildMapSearchUrl('naver', selectedSavedPlace)} target="_blank" rel="noreferrer">네이버맵</a>
+          <a className="kakaoMapLink" href={buildMapSearchUrl('kakao', selectedSavedPlace)} target="_blank" rel="noreferrer"><span><KakaoLogo /></span>카카오맵 가기</a>
+          <a className="naverMapLink" href={buildMapSearchUrl('naver', selectedSavedPlace)} target="_blank" rel="noreferrer"><span>N</span>네이버맵 가기</a>
         </div>
         <div className="placeMemo">
           <b>메모</b>
