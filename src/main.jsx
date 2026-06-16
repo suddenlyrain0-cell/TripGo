@@ -195,7 +195,7 @@ function App() {
   if (authLoading) return <div className="lobby authLobby"><div className="loadingOverlay inlineLoading"><div className="spinner" /><b>로그인 확인 중...</b></div></div>
   if (landingOpen) return <Landing onStart={startService} />
   return session
-    ? <Room session={session} setSession={setSession} authUser={authUser} onLogout={handleLogout} />
+    ? <Room session={session} setSession={setSession} authUser={authUser} onLogout={handleLogout} onOAuthLogin={handleOAuthLogin} />
     : <>
       <Lobby setSession={setSession} authUser={authUser} onLogout={handleLogout} onRequireAuth={() => setAuthModalOpen(true)} />
       {authModalOpen && <AuthScreen modal onClose={() => setAuthModalOpen(false)} onOAuthLogin={handleOAuthLogin} onGuestLogin={handleGuestLogin} />}
@@ -512,8 +512,8 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
   </div>
 }
 
-function Room({ session, setSession, authUser, onLogout }) {
-  const isGuest = authUser?.isGuest || session.isGuest
+function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
+  const isGuest = authUser ? authUser.isGuest : session.isGuest
   const profileName = authUser?.displayName || session.username
   const profileProvider = authUser?.provider || session.provider || 'guest'
   const [messages, setMessages] = useState([])
@@ -536,6 +536,7 @@ function Room({ session, setSession, authUser, onLogout }) {
   const [roomForm, setRoomForm] = useState({ roomName: '', password: '' })
   const [roomError, setRoomError] = useState('')
   const [roomLoading, setRoomLoading] = useState(false)
+  const [roomAuthLoadingProvider, setRoomAuthLoadingProvider] = useState('')
   const [mobileView, setMobileView] = useState('map')
   const [chat, setChat] = useState('')
   const [search, setSearch] = useState('')
@@ -890,6 +891,17 @@ function Room({ session, setSession, authUser, onLogout }) {
     setRoomLoading(false)
     setRoomManagerOpen(false)
     switchRoom(data)
+  }
+
+  async function loginFromRoomManager(provider) {
+    setRoomError('')
+    setRoomAuthLoadingProvider(provider)
+    try {
+      await onOAuthLogin(provider)
+    } catch (error) {
+      setRoomError(error.message || '로그인을 시작하지 못했어요.')
+      setRoomAuthLoadingProvider('')
+    }
   }
 
   function searchPlaces() {
@@ -1381,35 +1393,49 @@ function Room({ session, setSession, authUser, onLogout }) {
         <div className="modalHead">
           <div>
             <b>방 추가</b>
-            <span>{isGuest ? '게스트는 참여할 방만 찾을 수 있어요.' : `${session.username}님이 참여할 방을 관리해요.`}</span>
+            <span>{isGuest && roomMode === 'create' ? '로그인하면 직접 방을 만들 수 있어요.' : `${session.username}님이 참여할 방을 관리해요.`}</span>
           </div>
           <button className="iconButton" onClick={() => setRoomManagerOpen(false)} title="닫기"><X size={20} /></button>
         </div>
         <div className="tabs compact" role="tablist">
           <button className={roomMode === 'find' ? 'active' : ''} onClick={() => { setRoomMode('find'); setRoomError('') }}>방 찾기</button>
-          <button className={roomMode === 'create' ? 'active' : ''} disabled={isGuest} onClick={() => { setRoomMode('create'); setRoomError('') }}>방 만들기</button>
+          <button className={roomMode === 'create' ? 'active' : ''} onClick={() => { setRoomMode('create'); setRoomError('') }}>방 만들기</button>
         </div>
-        {isGuest && <div className="guestNotice">게스트는 방 참가만 가능해요.</div>}
-        <div className="formStack managerForm">
-          {roomMode === 'find' && <>
-            <label><span>방 검색</span><input placeholder="방 이름 입력" value={roomQuery} onChange={e => { setRoomQuery(e.target.value); setSelectedJoinRoom(null) }} /></label>
-            {roomQuery.trim() && <div className="roomSuggestions">
-              {filteredManagerRooms.map(room => (
-                <button key={room.id} className={selectedJoinRoom?.id === room.id ? 'active' : ''} onClick={() => { setSelectedJoinRoom(room); setRoomQuery(room.name) }}>
-                  <span>{room.name.slice(0, 1)}</span>
-                  <b>{room.name}</b>
-                </button>
-              ))}
-              {roomQuery.trim() && filteredManagerRooms.length === 0 && <p>검색된 방이 없어요.</p>}
-            </div>}
-          </>}
-          {roomMode === 'create' && <label><span>방 이름</span><input maxLength={MAX_NAME_LENGTH} placeholder="예: 제주 어디가" value={roomForm.roomName} onChange={e => setRoomForm({ ...roomForm, roomName: e.target.value })} /></label>}
-          <label><span>비밀번호</span><input placeholder="방 비밀번호" type="password" value={roomForm.password} onChange={e => setRoomForm({ ...roomForm, password: e.target.value })} /></label>
-        </div>
+        {isGuest && roomMode === 'find' && <div className="guestNotice">게스트는 방 참가만 가능해요.</div>}
+        {isGuest && roomMode === 'create' ? <div className="roomCreateLoginPanel">
+          <p>방을 새로 만들려면 소셜 로그인이 필요해요.</p>
+          <div className="authActions roomAuthActions">
+            <button className="oauthButton kakao" disabled={Boolean(roomAuthLoadingProvider)} onClick={() => loginFromRoomManager('kakao')}>
+              <span className="socialLogo kakaoLogo"><KakaoLogo /></span>
+              <span>{roomAuthLoadingProvider === 'kakao' ? '카카오 연결 중...' : '카카오계정 로그인'}</span>
+            </button>
+            <button className="oauthButton google" disabled={Boolean(roomAuthLoadingProvider)} onClick={() => loginFromRoomManager('google')}>
+              <span className="socialLogo googleLogo"><GoogleLogo /></span>
+              <span>{roomAuthLoadingProvider === 'google' ? '구글 연결 중...' : 'Google로 시작하기'}</span>
+            </button>
+          </div>
+        </div> : <>
+          <div className="formStack managerForm">
+            {roomMode === 'find' && <>
+              <label><span>방 검색</span><input placeholder="방 이름 입력" value={roomQuery} onChange={e => { setRoomQuery(e.target.value); setSelectedJoinRoom(null) }} /></label>
+              {roomQuery.trim() && <div className="roomSuggestions">
+                {filteredManagerRooms.map(room => (
+                  <button key={room.id} className={selectedJoinRoom?.id === room.id ? 'active' : ''} onClick={() => { setSelectedJoinRoom(room); setRoomQuery(room.name) }}>
+                    <span>{room.name.slice(0, 1)}</span>
+                    <b>{room.name}</b>
+                  </button>
+                ))}
+                {roomQuery.trim() && filteredManagerRooms.length === 0 && <p>검색된 방이 없어요.</p>}
+              </div>}
+            </>}
+            {roomMode === 'create' && <label><span>방 이름</span><input maxLength={MAX_NAME_LENGTH} placeholder="예: 제주 어디가" value={roomForm.roomName} onChange={e => setRoomForm({ ...roomForm, roomName: e.target.value })} /></label>}
+            <label><span>비밀번호</span><input placeholder="방 비밀번호" type="password" value={roomForm.password} onChange={e => setRoomForm({ ...roomForm, password: e.target.value })} /></label>
+          </div>
+          <button className="primary modalPrimary" disabled={roomLoading} onClick={() => roomMode === 'create' ? createRoomFromManager() : joinRoomFromManager(selectedJoinRoom)}>
+            {roomLoading ? '처리 중...' : roomMode === 'create' ? '방 만들고 이동' : '방 입장하기'}
+          </button>
+        </>}
         {roomError && <div className="error">{roomError}</div>}
-        <button className="primary modalPrimary" disabled={roomLoading || (roomMode === 'create' && isGuest)} onClick={() => roomMode === 'create' ? createRoomFromManager() : joinRoomFromManager(selectedJoinRoom)}>
-          {roomLoading ? '처리 중...' : roomMode === 'create' ? '방 만들고 이동' : '방 입장하기'}
-        </button>
       </div>
     </div>}
   </div>
