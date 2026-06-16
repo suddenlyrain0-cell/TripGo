@@ -103,8 +103,8 @@ input:focus,select:focus{border-color:#0a84ff;box-shadow:0 0 0 4px rgba(10,132,2
 .sessionPill b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
 .sessionPill small{display:block;margin-top:2px;color:#6e6e73;font-size:11px;font-weight:800}
 .logoutButton{background:rgba(255,255,255,.44);flex:0 0 auto}
-.loginButton{height:42px;border-radius:999px;padding:0 18px;background:#1d1d1f;color:#fff;font-weight:880;box-shadow:0 12px 28px rgba(0,0,0,.16)}
-.loginButton:hover{background:#2c2c2e;transform:translateY(-1px)}
+.loginButton{height:42px;border-radius:999px;padding:0 20px;background:linear-gradient(135deg,rgba(29,29,31,.78),rgba(29,29,31,.58));color:#fff;font-weight:880;border:1px solid rgba(255,255,255,.38);box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 0 0 1px rgba(255,255,255,.08),0 14px 30px rgba(0,0,0,.18);backdrop-filter:blur(22px) saturate(1.35)}
+.loginButton:hover{background:linear-gradient(135deg,rgba(44,44,46,.84),rgba(44,44,46,.64));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(255,255,255,.12),0 16px 34px rgba(0,0,0,.2);transform:translateY(-1px)}
 .card h1{margin:0 0 8px;font-size:42px;letter-spacing:0;font-weight:860;line-height:1.02}
 .card p{max-width:410px;margin:0;color:#5f6066;line-height:1.4;font-size:15px;font-weight:680}
 .setupCard p{max-width:none}

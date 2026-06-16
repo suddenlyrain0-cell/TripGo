@@ -566,7 +566,7 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
               <b>{authUser.displayName}</b>
               <small>{getProviderLabel(authUser.provider)} 로그인</small>
             </div>
-          </div> : <button className="loginButton" onClick={onRequireAuth}>Log In</button>}
+          </div> : <button className="loginButton" onClick={onRequireAuth}>로그인</button>}
         </div>
         {inviteLoading
           ? <div className="inviteLoading"><div className="spinner" /><b>초대받은 방을 확인 중...</b></div>
@@ -601,7 +601,7 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
             </div>
           </div>
           <button className="iconButton logoutButton" onClick={onLogout} title="로그아웃"><LogOut size={19} /></button>
-        </> : <button className="loginButton" onClick={onRequireAuth}>Log In</button>}
+        </> : <button className="loginButton" onClick={onRequireAuth}>로그인</button>}
       </div>
       <h1>어디가</h1>
       <p>친구와 함께 만들고 공유하는 실시간 여행 계획 서비스</p>
@@ -2045,7 +2045,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     </aside>
     <nav className="mobileTabBar">
       <button className={mobileView === 'rooms' ? 'active' : ''} onClick={() => setMobileView('rooms')}>
-        <MapPin size={20} />
+        <img className="mobileTabIcon" src={mobileView === 'rooms' ? '/nav-room-active.png' : '/nav-room-inactive.png'} alt="" aria-hidden="true" />
         <span>내 룸</span>
       </button>
       <button className={mobileView === 'map' ? 'active' : ''} onClick={() => setMobileView('map')}>
