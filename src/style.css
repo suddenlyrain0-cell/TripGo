@@ -180,11 +180,13 @@ body.resizingChat .room{transition:none}
 .iconButton:hover{background:rgba(0,0,0,.07);color:#1d1d1f}
 .iconButton.danger:hover{color:#ff3b30;background:rgba(255,59,48,.12)}
 .roomNav{display:grid;gap:8px;align-content:start;overflow:auto}
-.roomItem{height:60px;width:100%;display:grid;grid-template-columns:36px 1fr;align-items:center;gap:9px;text-align:left;padding:8px 9px;border-radius:12px;background:transparent;color:#1d1d1f}
+.roomItem{position:relative;overflow:hidden;height:60px;width:100%;display:grid;grid-template-columns:36px 1fr;align-items:center;gap:9px;text-align:left;padding:8px 9px;border-radius:12px;background:transparent;color:#1d1d1f}
 .roomItem:hover{background:rgba(255,255,255,.56)}
-.roomItem.active{background:#0a84ff;color:#fff}
+.roomItem.active{background:linear-gradient(135deg,rgba(10,132,255,.78),rgba(10,132,255,.56));color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.66),inset 0 0 0 1px rgba(255,255,255,.34),0 16px 34px rgba(10,132,255,.24);backdrop-filter:blur(24px) saturate(1.35)}
+.roomItem.active:before{content:"";position:absolute;inset:1px;border-radius:inherit;background:linear-gradient(120deg,rgba(255,255,255,.38),rgba(255,255,255,.08) 42%,rgba(255,255,255,.18));opacity:.78;pointer-events:none}
+.roomItem>*{position:relative;z-index:1}
 .roomAvatar{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.42);color:#0a84ff;font-weight:900}
-.roomItem.active .roomAvatar{background:rgba(255,255,255,.24);color:#fff}
+.roomItem.active .roomAvatar{background:rgba(255,255,255,.28);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.54),inset 0 0 0 1px rgba(255,255,255,.18);backdrop-filter:blur(18px) saturate(1.25)}
 .roomItem b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:15px}
 .roomItem small{display:block;margin-top:3px;color:inherit;opacity:.74;font-weight:700}
 .roomProfile{min-width:0;display:grid;grid-template-columns:34px minmax(0,1fr) 34px;align-items:center;gap:8px;padding:9px;border-radius:14px;background:rgba(255,255,255,.44);border:1px solid rgba(255,255,255,.52)}
