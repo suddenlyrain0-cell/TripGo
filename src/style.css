@@ -433,9 +433,13 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .placeDetailPanel .placeCommentForm input,.placeDetailPanel .placeCommentForm button{height:40px}
   .locateButton{right:14px;bottom:calc(76px + env(safe-area-inset-bottom))}
   .placeNotice{bottom:calc(136px + env(safe-area-inset-bottom));width:calc(100% - 36px);text-align:center}
-  .mobileTabBar{position:fixed;z-index:30;left:0;right:0;bottom:0;height:calc(64px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:6px 8px calc(6px + env(safe-area-inset-bottom));border-radius:0;background:rgba(255,255,255,.82);border-top:1px solid rgba(0,0,0,.08);box-shadow:0 -8px 26px rgba(0,0,0,.12);backdrop-filter:blur(28px) saturate(1.35)}
-  .mobileTabBar button{position:relative;display:grid;place-items:center;align-content:center;gap:2px;border-radius:16px;background:transparent;color:#6e6e73;font-weight:850}
-  .mobileTabBar button.active{background:#0a84ff;color:#fff}
+  .mobileTabBar{position:fixed;z-index:30;left:0;right:0;bottom:0;height:calc(64px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:6px 8px calc(6px + env(safe-area-inset-bottom));border-radius:0;background:linear-gradient(180deg,rgba(255,255,255,.76),rgba(255,255,255,.58));border-top:1px solid rgba(255,255,255,.8);box-shadow:0 -10px 34px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.82);backdrop-filter:blur(34px) saturate(1.55)}
+  .mobileTabBar button{--tab-color:#ff3b30;position:relative;display:grid;place-items:center;align-content:center;gap:2px;border-radius:16px;background:rgba(255,255,255,.12);color:#6e6e73;font-weight:850;overflow:hidden}
+  .mobileTabBar button:nth-child(2){--tab-color:#ff9500}
+  .mobileTabBar button:nth-child(3){--tab-color:#ffcc00}
+  .mobileTabBar button.active{background:linear-gradient(135deg,color-mix(in srgb,var(--tab-color) 24%,transparent),rgba(255,255,255,.26));color:var(--tab-color);box-shadow:0 10px 24px color-mix(in srgb,var(--tab-color) 18%,transparent),inset 0 1px 0 rgba(255,255,255,.72);border:1px solid color-mix(in srgb,var(--tab-color) 28%,transparent)}
+  .mobileTabBar button.active:before{content:"";position:absolute;inset:1px;border-radius:15px;background:linear-gradient(180deg,rgba(255,255,255,.5),transparent 58%);pointer-events:none}
+  .mobileTabBar button.active svg,.mobileTabBar button.active span{position:relative;z-index:1}
   .mobileTabBar span{font-size:11px;line-height:1}
   .mobileTabBar em{position:absolute;right:16px;top:5px;min-width:18px;height:18px;border-radius:99px;background:#ff3b30;color:#fff;border:2px solid #fff;font-size:10px;font-style:normal;display:grid;place-items:center;padding:0 4px}
   .card{padding:24px}.card h1{font-size:38px}.formStack label{grid-template-columns:1fr;padding:9px 13px}.formStack label span{font-size:13px}.tagPills{grid-template-columns:repeat(3,1fr)}
