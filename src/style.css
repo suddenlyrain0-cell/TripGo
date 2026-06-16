@@ -1,7 +1,7 @@
 *{box-sizing:border-box}
 :root{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",sans-serif;color:#1d1d1f;background:#f5f5f7}
 body{margin:0;min-width:320px;background:linear-gradient(180deg,#fbfbfd 0%,#f1f2f5 100%)}
-button,input,select{font:inherit}
+button,input,select{font:inherit} 
 button{cursor:pointer;border:0}
 input,select{width:100%;border:1px solid #d7d7dc;border-radius:16px;padding:13px 15px;background:#fff;color:#1d1d1f;outline:none}
 input:focus,select:focus{border-color:#0a84ff;box-shadow:0 0 0 4px rgba(10,132,255,.14)}

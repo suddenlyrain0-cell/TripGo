@@ -2122,7 +2122,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
               <span className="socialLogo googleLogo"><GoogleLogo /></span>
               <span>{roomAuthLoadingProvider === 'google' ? '구글 연결 중...' : 'Google로 시작하기'}</span>
             </button>
-          </div>
+          </div> 
         </div> : <>
           <div className="formStack managerForm">
             {roomMode === 'find' && <>
