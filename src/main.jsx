@@ -652,6 +652,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const [membersOpen, setMembersOpen] = useState(false)
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [placeDeleteConfirmOpen, setPlaceDeleteConfirmOpen] = useState(false)
   const [chatWidth, setChatWidth] = useState(380)
   const [roomManagerOpen, setRoomManagerOpen] = useState(false)
   const [roomMode, setRoomMode] = useState('find')
@@ -1600,6 +1601,34 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     setSession(null)
   }
 
+  async function deleteSelectedPlace() {
+    if (!selectedSavedPlace) return
+    const placeToDelete = selectedSavedPlace
+    const { data, error } = await supabase
+      .from('places')
+      .delete()
+      .eq('id', placeToDelete.id)
+      .select('id')
+
+    if (error || !data?.length) {
+      setPlaceDeleteConfirmOpen(false)
+      showLocationNotice('장소를 삭제하지 못했어요. Supabase places 삭제 정책을 확인해주세요.')
+      return
+    }
+
+    setPlaces(prev => prev.filter(place => place.id !== placeToDelete.id))
+    setPlaceComments(prev => prev.filter(comment => comment.place_id !== placeToDelete.id))
+    setSelectedSavedPlace(null)
+    setFocusedPlaceId(null)
+    setPlaceDeleteConfirmOpen(false)
+    await supabase.from('messages').insert({
+      room_id: session.roomId,
+      username: '알림',
+      type: 'system',
+      content: `${session.username}님이 ${placeToDelete.name} 장소를 삭제했어요.`
+    })
+  }
+
   async function kickMember(member) {
     if (!isOwner || member.username === session.username) return
     await supabase.from('room_members').delete().eq('room_id', session.roomId).eq('username', member.username)
@@ -2022,7 +2051,10 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             <b>{selectedSavedPlace.name}</b>
             <span>{selectedSavedPlace.address}</span>
           </div>
-          <button className="iconButton" onClick={() => setSelectedSavedPlace(null)} title="닫기"><X size={20} /></button>
+          <div className="panelHeadActions">
+            <button className="iconButton danger" onClick={() => setPlaceDeleteConfirmOpen(true)} title="장소 삭제"><Trash2 size={20} /></button>
+            <button className="iconButton" onClick={() => setSelectedSavedPlace(null)} title="닫기"><X size={20} /></button>
+          </div>
         </div>
         <div className="placeMeta">
           <span>#{selectedSavedPlace.tag}</span>
@@ -2191,6 +2223,16 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         <div>
           <button onClick={() => setDeleteConfirmOpen(false)}>취소</button>
           <button className="destructive" onClick={deleteRoom}>삭제</button>
+        </div>
+      </div>
+    </div>}
+    {placeDeleteConfirmOpen && selectedSavedPlace && <div className="modalBackdrop" onClick={() => setPlaceDeleteConfirmOpen(false)}>
+      <div className="confirmModal" onClick={e => e.stopPropagation()}>
+        <b>장소를 삭제할까요?</b>
+        <p>{selectedSavedPlace.name} 장소와 댓글이 모두 삭제돼요.</p>
+        <div>
+          <button onClick={() => setPlaceDeleteConfirmOpen(false)}>취소</button>
+          <button className="destructive" onClick={deleteSelectedPlace}>삭제</button>
         </div>
       </div>
     </div>}

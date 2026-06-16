@@ -80,6 +80,7 @@ create policy "public insert messages" on messages for insert with check (true);
 create policy "public read places" on places for select using (true);
 create policy "public insert places" on places for insert with check (true);
 create policy "public update places" on places for update using (true) with check (true);
+create policy "public delete places" on places for delete using (true);
 create policy "public read place comments" on place_comments for select using (true);
 create policy "public insert place comments" on place_comments for insert with check (true);
 create policy "public read message reactions" on message_reactions for select using (true);
