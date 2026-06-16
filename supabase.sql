@@ -68,6 +68,26 @@ alter table places enable row level security;
 alter table place_comments enable row level security;
 alter table message_reactions enable row level security;
 
+drop policy if exists "public read rooms" on rooms;
+drop policy if exists "public insert rooms" on rooms;
+drop policy if exists "public update rooms" on rooms;
+drop policy if exists "public delete rooms" on rooms;
+drop policy if exists "public read members" on room_members;
+drop policy if exists "public insert members" on room_members;
+drop policy if exists "public delete members" on room_members;
+drop policy if exists "public read messages" on messages;
+drop policy if exists "public insert messages" on messages;
+drop policy if exists "public read places" on places;
+drop policy if exists "public insert places" on places;
+drop policy if exists "public update places" on places;
+drop policy if exists "public delete places" on places;
+drop policy if exists "public read place comments" on place_comments;
+drop policy if exists "public insert place comments" on place_comments;
+drop policy if exists "public read message reactions" on message_reactions;
+drop policy if exists "public insert message reactions" on message_reactions;
+drop policy if exists "public update message reactions" on message_reactions;
+drop policy if exists "public delete message reactions" on message_reactions;
+
 create policy "public read rooms" on rooms for select using (true);
 create policy "public insert rooms" on rooms for insert with check (true);
 create policy "public update rooms" on rooms for update using (true) with check (true);
