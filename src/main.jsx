@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Crown, Image, LocateFixed, LogOut, MapPin, MessageCircle, PanelRightClose, Plus, Search, Send, Trash2, UserMinus, Users, X } from 'lucide-react'
+import { ArrowLeft, Crown, Image, LocateFixed, LogOut, MapPin, MessageCircle, PanelRightClose, Plus, Search, Send, Trash2, UserMinus, Users, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './supabase'
 import './style.css'
 
@@ -9,6 +9,7 @@ const MAX_NAME_LENGTH = 10
 const MIN_LOADING_MS = 700
 const AUTH_STORAGE_KEY = 'trip_auth_user'
 const ROOM_SESSION_STORAGE_KEY = 'trip_room_session'
+const SEARCH_STORAGE_KEY = 'trip_recent_searches'
 const BLOCKED_WORDS = ['시발', '씨발', '병신', '좆', '개새끼', 'fuck', 'shit']
 
 function safeParseJson(value) {
@@ -314,7 +315,7 @@ function Landing({ onStart }) {
           <span>어디가 · 여행 지도 방</span>
         </div>
         <h1>여행 장소를<br />같이 모으세요.</h1>
-        <p>친구들과 함께 여행 장소를 지도에 모으고, 실시간으로 공유하는 협업 여행 지도 서비스입니다.</p>
+        <p>친구들과 함께 여행 장소를 지도에 모으고, 실시간으로 공유하는 협업 여행 계획 서비스입니다.</p>
         <div className="heroActions">
           <button className="heroPrimary" onClick={onStart}>시작하기</button>
           <a href="#flow">작동 방식 보기</a>
@@ -496,7 +497,7 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
         </> : <button className="loginButton" onClick={onRequireAuth}>Log In</button>}
       </div>
       <h1>어디가</h1>
-      <p>친구들과 함께 여행 장소를 지도에 모으고, 실시간으로 공유하는 협업 여행 지도 서비스</p>
+      <p>친구들과 함께 여행 장소를 지도에 모으고, 실시간으로 공유하는 협업 여행 계획 서비스</p>
       <div className="tabs" role="tablist">
         <button className={mode === 'find' ? 'active' : ''} onClick={() => { setMode('find'); setError('') }}>방 찾기</button>
         <button className={mode === 'create' ? 'active' : ''} disabled={isGuest} onClick={() => { setMode('create'); setError('') }}>방 만들기</button>
@@ -555,6 +556,9 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const [chat, setChat] = useState('')
   const [search, setSearch] = useState('')
   const [results, setResults] = useState([])
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [mobileSearchInput, setMobileSearchInput] = useState('')
+  const [recentSearches, setRecentSearches] = useState(() => (safeParseJson(localStorage.getItem(SEARCH_STORAGE_KEY)) || []).slice(0, 6))
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [selectedSavedPlace, setSelectedSavedPlace] = useState(null)
   const [focusedPlaceId, setFocusedPlaceId] = useState(null)
@@ -665,6 +669,28 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       window.removeEventListener('resize', refreshMap)
     }
   }, [mapReady, chatOpen])
+
+  useEffect(() => {
+    if (!mobileSearchOpen || !kakaoRef.current) return
+    const keyword = mobileSearchInput.trim()
+    if (keyword.length < 2) {
+      setResults([])
+      return
+    }
+
+    const timer = setTimeout(() => {
+      const ps = new kakaoRef.current.maps.services.Places()
+      ps.keywordSearch(keyword, (data, status) => {
+        if (status === kakaoRef.current.maps.services.Status.OK) {
+          setResults(data.slice(0, 8))
+        } else {
+          setResults([])
+        }
+      })
+    }, 260)
+
+    return () => clearTimeout(timer)
+  }, [mobileSearchInput, mobileSearchOpen])
 
   useEffect(() => {
     if (!mapReady || !kakaoRef.current || !mapObj.current || !mapAreaRef.current) return
@@ -920,17 +946,60 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     }
   }
 
-  function searchPlaces() {
-    if (!search.trim() || !kakaoRef.current) return
+  function rememberSearchTerm(value) {
+    const term = value.trim()
+    if (!term) return
+    setRecentSearches(prev => {
+      const next = [term, ...prev.filter(item => item !== term)].slice(0, 6)
+      localStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  function openMobileSearch() {
+    if (!window.matchMedia?.('(max-width: 720px)').matches) return false
+    setMobileSearchInput(search)
+    setResults([])
+    setSelectedPlace(null)
+    setSelectedSavedPlace(null)
+    setMobileSearchOpen(true)
+    return true
+  }
+
+  function searchPlaces(keyword = search, options = {}) {
+    const trimmed = keyword.trim()
+    if (!trimmed || !kakaoRef.current) return
     const ps = new kakaoRef.current.maps.services.Places()
-    ps.keywordSearch(search, (data, status) => {
+    ps.keywordSearch(trimmed, (data, status) => {
       if (status === kakaoRef.current.maps.services.Status.OK) {
         setResults(data.slice(0, 6))
         setSelectedPlace(null)
+        setSearch(trimmed)
+        rememberSearchTerm(trimmed)
         const first = data[0]
         mapObj.current.setCenter(new kakaoRef.current.maps.LatLng(first.y, first.x))
+        if (options.closeMobile) {
+          setMobileSearchOpen(false)
+          setMobileView('map')
+        }
       }
     })
+  }
+
+  function selectSearchResult(place) {
+    setSelectedPlace(place)
+    setResults([])
+    setSearch(place.place_name)
+    setMobileSearchInput(place.place_name)
+    rememberSearchTerm(place.place_name)
+    setMobileSearchOpen(false)
+    setMobileView('map')
+  }
+
+  function submitMobileSearch() {
+    const keyword = mobileSearchInput.trim()
+    if (!keyword) return
+    searchPlaces(keyword, { closeMobile: true })
   }
 
   function moveToCurrentLocation(options = {}) {
@@ -1245,14 +1314,44 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       <div className="mapSearch">
         <div className="searchBox">
           <Search size={20} />
-          <input placeholder="장소 검색 예: 오사카 맛집" value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && searchPlaces()} />
+          <input placeholder="장소 검색 예: 오사카 맛집" value={search} onFocus={openMobileSearch} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && searchPlaces()} />
           {search && <button className="clearSearch" onClick={() => { setSearch(''); setResults([]); setSelectedPlace(null) }} title="검색어 지우기"><X size={18} /></button>}
-          <button onClick={searchPlaces}>검색</button>
+          <button onClick={() => openMobileSearch() || searchPlaces()}>검색</button>
         </div>
         {results.length > 0 && <div className="results">
-          {results.map(r => <button key={r.id} onClick={() => { setSelectedPlace(r); setResults([]) }}><b>{r.place_name}</b><span>{r.road_address_name || r.address_name}</span></button>)}
+          {results.map(r => <button key={r.id} onClick={() => selectSearchResult(r)}><b>{r.place_name}</b><span>{r.road_address_name || r.address_name}</span></button>)}
         </div>}
       </div>
+      {mobileSearchOpen && <section className="mobileSearchPage">
+        <div className="mobileSearchHead">
+          <button className="iconButton" onClick={() => { setMobileSearchOpen(false); setResults([]) }} title="뒤로"><ArrowLeft size={22} /></button>
+          <div className="mobileSearchInput">
+            <Search size={19} />
+            <input autoFocus placeholder="장소 검색" value={mobileSearchInput} onChange={e => setMobileSearchInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && submitMobileSearch()} />
+            {mobileSearchInput && <button onClick={() => { setMobileSearchInput(''); setResults([]) }} title="검색어 지우기"><X size={16} /></button>}
+          </div>
+          <button className="mobileSearchSubmit" onClick={submitMobileSearch}>검색</button>
+        </div>
+        <div className="mobileSearchBody">
+          {mobileSearchInput.trim().length < 2 && recentSearches.length > 0 && <>
+            <b>최근 검색</b>
+            <div className="recentSearches">
+              {recentSearches.map(term => <button key={term} onClick={() => { setMobileSearchInput(term); searchPlaces(term, { closeMobile: true }) }}>{term}</button>)}
+            </div>
+          </>}
+          {mobileSearchInput.trim().length >= 2 && <div className="mobileSearchResults">
+            {results.length > 0
+              ? results.map(result => <button key={result.id} onClick={() => selectSearchResult(result)}>
+                <span><MapPin size={18} /></span>
+                <div>
+                  <b>{result.place_name}</b>
+                  <small>{result.road_address_name || result.address_name}</small>
+                </div>
+              </button>)
+              : <p>검색어를 입력하면 연관 장소가 표시돼요.</p>}
+          </div>}
+        </div>
+      </section>}
       <button className="locateButton" onClick={moveToCurrentLocation} disabled={locating} title="현재 위치로 이동">
         <LocateFixed size={21} />
         <span>{locating ? '찾는 중' : '내 위치'}</span>
