@@ -157,6 +157,11 @@ input:focus,select:focus{border-color:#0a84ff;box-shadow:0 0 0 4px rgba(10,132,2
 .inlineLoading{position:relative;inset:auto;min-width:250px;min-height:160px;border-radius:24px;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.72);box-shadow:0 20px 64px rgba(0,0,0,.14)}
 .spinner{width:42px;height:42px;border-radius:50%;border:4px solid rgba(10,132,255,.18);border-top-color:#0a84ff;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.inviteCard h1{margin-top:4px}
+.inviteForm{margin-top:22px}
+.inviteActions{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center}
+.inviteSecondary{height:48px;border-radius:16px;padding:0 15px;background:rgba(118,118,128,.14);color:#3a3a3c;font-weight:850}
+.inviteLoading{min-height:190px;display:grid;place-items:center;align-content:center;gap:14px;color:#1d1d1f;font-size:16px}
 
 .room{height:100vh;display:grid;grid-template-columns:240px minmax(420px,1fr) var(--chat-width,380px);background:#f5f5f7;overflow:hidden;transition:grid-template-columns .22s ease}
 body.resizingChat .room{transition:none}
@@ -249,7 +254,7 @@ body.resizingChat .room{transition:none}
 .placeCommentForm input{height:42px;background:rgba(255,255,255,.58);border-color:rgba(0,0,0,.08)}
 .placeCommentForm button{height:42px;border-radius:14px;background:#0a84ff;color:#fff;font-weight:850}
 
-.side{container-type:inline-size;position:relative;min-width:0;background:rgba(255,255,255,.7);border-left:1px solid rgba(0,0,0,.1);display:grid;grid-template-rows:auto 150px minmax(0,1fr) auto;height:100vh;backdrop-filter:blur(28px) saturate(1.3)}
+.side{container-type:inline-size;position:relative;min-width:0;background:rgba(255,255,255,.7);border-left:1px solid rgba(0,0,0,.1);display:grid;grid-template-rows:auto auto 150px minmax(0,1fr) auto;height:100vh;backdrop-filter:blur(28px) saturate(1.3)}
 .chatResizeHandle{position:absolute;z-index:8;left:-4px;top:0;width:8px;height:100%;cursor:col-resize}
 .chatResizeHandle:after{content:"";position:absolute;left:3px;top:0;width:1px;height:100%;background:rgba(0,0,0,.08)}
 body.resizingChat{cursor:col-resize;user-select:none}
@@ -265,6 +270,9 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .sideHeader{padding-left:14px;padding-right:14px}
 }
 .places{min-height:0;padding:15px 18px 13px;border-bottom:1px solid rgba(0,0,0,.08);overflow:hidden}
+.inviteStrip{display:flex;align-items:center;gap:8px;padding:10px 14px 0;background:rgba(242,242,247,.72)}
+.inviteStrip button{height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 13px;border-radius:18px;background:rgba(255,59,48,.13);color:#ff3b30;font-size:14px;font-weight:900;border:1px solid rgba(255,59,48,.16)}
+.inviteStrip span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#ff3b30;font-size:12px;font-weight:820}
 .places b{font-size:15px}
 .placeStoryScroller{display:flex;gap:12px;margin-top:12px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .placeStoryScroller::-webkit-scrollbar{height:0}
@@ -372,10 +380,11 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mobile-rooms .roomItem b{font-size:17px}
   .mobile-rooms .roomItem small{font-size:13px}
   .side{display:none;position:absolute;z-index:11;inset:0;width:auto;height:auto;border-radius:0;box-shadow:none;border-left:0}
-  .mobile-chat .side{display:grid;grid-template-rows:auto minmax(0,1fr) auto;bottom:calc(64px + env(safe-area-inset-bottom));height:auto}
+  .mobile-chat .side{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;bottom:calc(64px + env(safe-area-inset-bottom));height:auto}
   .mobile-chat .chatResizeHandle{display:none}
   .mobile-chat .chatCollapseButton{display:none}
   .mobile-chat .sideHeader{min-height:64px;padding:10px 16px}
+  .mobile-chat .inviteStrip{padding:8px 12px 0}
   .mobile-chat .side>.places{display:none}
   .mobile-chat .chat{padding:16px;background:rgba(250,250,250,.78)}
   .mobile-chat .side footer{grid-template-columns:40px minmax(0,1fr) 40px;gap:8px;padding:10px 12px 12px}
@@ -406,6 +415,19 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mobileTabBar span{font-size:11px;line-height:1}
   .mobileTabBar em{position:absolute;right:16px;top:5px;min-width:18px;height:18px;border-radius:99px;background:#ff3b30;color:#fff;border:2px solid #fff;font-size:10px;font-style:normal;display:grid;place-items:center;padding:0 4px}
   .card{padding:24px}.card h1{font-size:38px}.formStack label{grid-template-columns:1fr;padding:9px 13px}.formStack label span{font-size:13px}.tagPills{grid-template-columns:repeat(3,1fr)}
+  .lobby{min-height:100dvh;place-items:start center;padding:clamp(14px,3dvh,24px) 16px 14px}
+  .lobby .card{width:min(420px,100%);max-height:calc(100dvh - 28px);overflow:auto;border-radius:26px;padding:18px}
+  .lobby .cardTop{margin-bottom:12px}
+  .lobby .appMark{width:44px;height:44px;border-radius:15px;margin-bottom:12px}
+  .lobby .loginButton{height:38px;padding:0 15px;font-size:15px}
+  .lobby .card h1{font-size:34px;margin-bottom:6px}
+  .lobby .card p{font-size:13px;line-height:1.34}
+  .lobby .tabs{margin:18px 0 10px;border-radius:15px}
+  .lobby .tabs button{height:38px;border-radius:12px;font-size:14px}
+  .lobby .formStack{gap:8px;margin-bottom:12px}
+  .lobby .formStack label{min-height:58px;border-radius:14px;padding:8px 12px}
+  .lobby .formStack input{height:32px;font-size:15px}
+  .lobby .primary{min-height:44px;border-radius:15px;font-size:16px}
   .cardTop{align-items:flex-start}.sessionPill{max-width:160px}.guestInlineForm{grid-template-columns:1fr}.guestInlineForm button{width:100%}
   .mobileSearchPage{position:fixed;z-index:40;inset:0;display:grid;grid-template-rows:auto minmax(0,1fr);background:rgba(248,248,250,.9);backdrop-filter:blur(24px) saturate(1.25)}
   .mobileSearchHead{display:grid;grid-template-columns:40px minmax(0,1fr) 54px;gap:8px;align-items:center;padding:12px 12px 10px;border-bottom:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.72)}

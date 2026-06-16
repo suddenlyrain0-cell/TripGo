@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ArrowLeft, Crown, Image, LocateFixed, LogOut, MapPin, MessageCircle, PanelRightClose, Plus, Search, Send, Trash2, UserMinus, Users, X } from 'lucide-react'
+import { ArrowLeft, Crown, Image, Link2, LocateFixed, LogOut, MapPin, MessageCircle, PanelRightClose, Plus, Search, Send, Trash2, UserMinus, Users, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './supabase'
 import './style.css'
 
@@ -393,11 +393,16 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
   const [form, setForm] = useState({ roomName: '', password: '', username: authUser?.displayName || '' })
   const [roomQuery, setRoomQuery] = useState('')
   const [selectedRoom, setSelectedRoom] = useState(null)
+  const [inviteRoom, setInviteRoom] = useState(null)
+  const [inviteLoading, setInviteLoading] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const lobbyMapRef = useRef(null)
 
-  useEffect(() => { fetchRooms() }, [])
+  useEffect(() => {
+    fetchRooms()
+    fetchInviteRoom()
+  }, [])
 
   useEffect(() => {
     setForm(prev => prev.username ? prev : { ...prev, username: authUser?.displayName || '' })
@@ -425,6 +430,30 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
   async function fetchRooms() {
     const { data } = await supabase.from('rooms').select('*').order('created_at', { ascending: false })
     setRooms(data || [])
+  }
+
+  async function fetchInviteRoom() {
+    const roomId = new URLSearchParams(window.location.search).get('room')
+    if (!roomId) return
+    setInviteLoading(true)
+    const { data, error } = await supabase.from('rooms').select('*').eq('id', roomId).single()
+    if (data && !error) {
+      setInviteRoom(data)
+      setRoomQuery(data.name)
+      setSelectedRoom(data)
+    } else {
+      setError('초대받은 방을 찾지 못했어요.')
+    }
+    setInviteLoading(false)
+  }
+
+  function closeInviteRoom() {
+    const nextUrl = `${window.location.origin}${window.location.pathname}`
+    window.history.replaceState({}, '', nextUrl)
+    setInviteRoom(null)
+    setSelectedRoom(null)
+    setRoomQuery('')
+    setError('')
   }
 
   async function enterRoom(room) {
@@ -491,6 +520,39 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
     .filter(room => room.name.toLowerCase().includes(roomQuery.trim().toLowerCase()))
     .slice(0, 5)
   const primaryDisabled = loading || (mode === 'create' && Boolean(isGuest))
+
+  if (inviteLoading || inviteRoom) {
+    return <div className="lobby inviteLobby">
+      <div ref={lobbyMapRef} className="lobbyMap" aria-hidden="true" />
+      <div className="card inviteCard">
+        <div className="cardTop">
+          <div className="appMark"><MapPin size={22} /></div>
+          {authUser ? <div className="sessionPill">
+            <span>{authUser.displayName.slice(0, 1)}</span>
+            <div>
+              <b>{authUser.displayName}</b>
+              <small>{getProviderLabel(authUser.provider)} 로그인</small>
+            </div>
+          </div> : <button className="loginButton" onClick={onRequireAuth}>Log In</button>}
+        </div>
+        {inviteLoading
+          ? <div className="inviteLoading"><div className="spinner" /><b>초대받은 방을 확인 중...</b></div>
+          : <>
+            <h1>{inviteRoom.name}</h1>
+            <p>{inviteRoom.name} 방에 입장할까요?</p>
+            <div className="formStack inviteForm">
+              <label><span>닉네임</span><input maxLength={MAX_NAME_LENGTH} placeholder="사용자 이름" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} /></label>
+              <label><span>비밀번호</span><input placeholder="방 비밀번호" type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></label>
+            </div>
+            {error && <div className="error">{error}</div>}
+            <div className="inviteActions">
+              <button className="primary" disabled={loading} onClick={() => enterRoom(inviteRoom)}>{loading ? '입장 중...' : '입장하기'}</button>
+              <button className="inviteSecondary" onClick={closeInviteRoom}>다른 방 찾기</button>
+            </div>
+          </>}
+      </div>
+    </div>
+  }
 
   return <div className="lobby">
     <div ref={lobbyMapRef} className="lobbyMap" aria-hidden="true" />
@@ -581,6 +643,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const [locating, setLocating] = useState(false)
   const [locationNotice, setLocationNotice] = useState('')
   const [placeNotice, setPlaceNotice] = useState('')
+  const [inviteNotice, setInviteNotice] = useState('')
   const mapRef = useRef(null)
   const mapAreaRef = useRef(null)
   const mapObj = useRef(null)
@@ -1476,6 +1539,17 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     setMobileView('map')
   }
 
+  async function copyInviteLink() {
+    const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${session.roomId}`
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      setInviteNotice('초대 링크가 복사되었습니다.')
+    } catch {
+      setInviteNotice(inviteUrl)
+    }
+    setTimeout(() => setInviteNotice(''), 2400)
+  }
+
   const filteredManagerRooms = allRooms
     .filter(room => room.name.toLowerCase().includes(roomQuery.trim().toLowerCase()))
     .slice(0, 6)
@@ -1669,6 +1743,10 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             <button className="iconButton danger" onClick={() => setLeaveConfirmOpen(true)} title="나가기"><LogOut size={21} /></button>
           </div>
         </header>
+        <div className="inviteStrip">
+          <button onClick={copyInviteLink}><Link2 size={17} /> 초대하기</button>
+          {inviteNotice && <span>{inviteNotice}</span>}
+        </div>
         <section className="places">
           <b>추가된 장소</b>
           {renderPlaceStories()}
