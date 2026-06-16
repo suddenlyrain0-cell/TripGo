@@ -103,8 +103,8 @@ input:focus,select:focus{border-color:#0a84ff;box-shadow:0 0 0 4px rgba(10,132,2
 .sessionPill b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
 .sessionPill small{display:block;margin-top:2px;color:#6e6e73;font-size:11px;font-weight:800}
 .logoutButton{background:rgba(255,255,255,.44);flex:0 0 auto}
-.loginButton{height:42px;border-radius:999px;padding:0 20px;background:linear-gradient(135deg,rgba(29,29,31,.78),rgba(29,29,31,.58));color:#fff;font-weight:880;border:1px solid rgba(255,255,255,.38);box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 0 0 1px rgba(255,255,255,.08),0 14px 30px rgba(0,0,0,.18);backdrop-filter:blur(22px) saturate(1.35)}
-.loginButton:hover{background:linear-gradient(135deg,rgba(44,44,46,.84),rgba(44,44,46,.64));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(255,255,255,.12),0 16px 34px rgba(0,0,0,.2);transform:translateY(-1px)}
+.loginButton{height:42px;border-radius:999px;padding:0 20px;background:linear-gradient(135deg,rgba(255,214,45,.96),rgba(255,184,0,.78));color:#4f3600;font-weight:880;border:1px solid rgba(255,255,255,.56);box-shadow:inset 0 1px 0 rgba(255,255,255,.62),inset 0 0 0 1px rgba(255,255,255,.14),0 14px 30px rgba(255,184,0,.2);backdrop-filter:blur(22px) saturate(1.35)}
+.loginButton:hover{background:linear-gradient(135deg,rgba(255,226,70,.98),rgba(255,193,7,.84));box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 0 0 1px rgba(255,255,255,.18),0 16px 34px rgba(255,184,0,.24);transform:translateY(-1px)}
 .card h1{margin:0 0 8px;font-size:42px;letter-spacing:0;font-weight:860;line-height:1.02}
 .card p{max-width:410px;margin:0;color:#5f6066;line-height:1.4;font-size:15px;font-weight:680}
 .setupCard p{max-width:none}
@@ -133,9 +133,9 @@ input:focus,select:focus{border-color:#0a84ff;box-shadow:0 0 0 4px rgba(10,132,2
 .guestInlineForm{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:10px}
 .guestInlineForm input{height:48px;border-radius:16px;background:rgba(255,255,255,.78)}
 .guestInlineForm button{height:48px;border-radius:16px;background:#0a84ff;color:#fff;font-size:17px;font-weight:880;box-shadow:0 12px 28px rgba(10,132,255,.24)}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:24px 0 14px;padding:5px;background:rgba(118,118,128,.16);border-radius:17px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:24px 0 14px;padding:5px;background:linear-gradient(135deg,rgba(255,255,255,.36),rgba(118,118,128,.14));border:1px solid rgba(255,255,255,.48);border-radius:17px;box-shadow:inset 0 1px 0 rgba(255,255,255,.58),inset 0 0 0 1px rgba(255,255,255,.08),0 12px 28px rgba(0,0,0,.08);backdrop-filter:blur(22px) saturate(1.3)}
 .tabs button{height:44px;border-radius:13px;background:transparent;color:#3a3a3c;font-size:16px;font-weight:830}
-.tabs .active{background:#fff;color:#0a84ff;box-shadow:0 7px 20px rgba(0,0,0,.12)}
+.tabs .active{background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,255,255,.64));color:#0a84ff;border:1px solid rgba(255,255,255,.72);box-shadow:inset 0 1px 0 rgba(255,255,255,.86),inset 0 0 0 1px rgba(255,255,255,.14),0 8px 18px rgba(0,0,0,.1);backdrop-filter:blur(18px) saturate(1.25)}
 .tabs button:disabled{opacity:.45;cursor:not-allowed}
 .tabs button:disabled:hover{color:#3a3a3c}
 .guestNotice{margin:-4px 0 12px;padding:10px 12px;border-radius:14px;background:rgba(255,204,0,.18);color:#6d5300;font-size:13px;font-weight:850}
@@ -443,7 +443,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mobileTabBar button{--tab-color:#ff3b30;position:relative;display:grid;place-items:center;align-content:center;gap:2px;border-radius:16px;background:transparent;color:#6e6e73;font-weight:850}
   .mobileTabBar button:nth-child(2){--tab-color:#ff9500}
   .mobileTabBar button:nth-child(3){--tab-color:#ffcc00}
-  .mobileTabBar button.active{background:var(--tab-color);color:#fff}
+  .mobileTabBar button.active{background:color-mix(in srgb,var(--tab-color) 18%,rgba(255,255,255,.72));color:#3a3a3c;border:1px solid rgba(255,255,255,.64);box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 6px 16px color-mix(in srgb,var(--tab-color) 14%,transparent);backdrop-filter:blur(18px) saturate(1.25)}
   .mobileTabIcon{width:26px;height:26px;display:block;object-fit:contain}
   .mobileTabBar span{font-size:11px;line-height:1}
   .mobileTabBar em{position:absolute;right:16px;top:5px;min-width:18px;height:18px;border-radius:99px;background:#ff3b30;color:#fff;border:2px solid #fff;font-size:10px;font-style:normal;display:grid;place-items:center;padding:0 4px}
