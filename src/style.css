@@ -295,9 +295,9 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .msg b{display:block;margin:0 0 5px 8px;color:#7a7a80;font-size:13px;font-weight:800}
 .msg p{display:inline-block;max-width:92%;margin:0;background:#e5e5ea;color:#1d1d1f;padding:11px 14px;border-radius:19px;line-height:1.36;word-break:break-word}
 .system p{background:#fff4d8;color:#8a4b00}
-.reactionPicker{width:max-content;max-width:100%;display:flex;align-items:center;gap:5px;margin:7px 0 3px 8px;padding:5px;border-radius:999px;background:rgba(255,255,255,.46);border:1px solid rgba(255,255,255,.74);box-shadow:0 14px 38px rgba(0,0,0,.14);backdrop-filter:blur(34px) saturate(1.45)}
-.reactionPicker button{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.36);border:1px solid rgba(10,132,255,.12);font-size:17px;line-height:1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}
-.reactionPicker button:hover,.reactionPicker button.active{background:rgba(10,132,255,.13);border-color:rgba(10,132,255,.22);transform:translateY(-1px)}
+.reactionPicker{width:max-content;max-width:100%;display:flex;align-items:center;gap:7px;margin:7px 0 3px 8px;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.46);border:1px solid rgba(255,255,255,.74);box-shadow:0 14px 38px rgba(0,0,0,.14);backdrop-filter:blur(34px) saturate(1.45)}
+.reactionPicker button{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:transparent;border:0;font-size:20px;line-height:1;padding:0;overflow:visible}
+.reactionPicker button:hover,.reactionPicker button.active{background:rgba(10,132,255,.12);transform:translateY(-1px)}
 .reactionSummary{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 0 8px}
 .reactionSummary button{height:23px;display:inline-flex;align-items:center;gap:3px;padding:0 7px;border-radius:12px;background:rgba(255,255,255,.42);border:1px solid rgba(255,255,255,.72);box-shadow:0 7px 14px rgba(0,0,0,.07);backdrop-filter:blur(22px) saturate(1.35)}
 .reactionSummary button.mine{border-color:rgba(10,132,255,.24);background:rgba(10,132,255,.12)}
