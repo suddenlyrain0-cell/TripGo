@@ -89,7 +89,9 @@ input:focus,select:focus{border-color:#0a84ff;box-shadow:0 0 0 4px rgba(10,132,2
   opacity:.95;transform:scale(1.02);pointer-events:none}
 .lobby:after{content:"";position:absolute;inset:0;z-index:1;background:radial-gradient(circle at 50% 24%,rgba(255,255,255,.2),rgba(246,248,252,.32) 46%,rgba(210,232,244,.5) 100%);pointer-events:none}
 .lobbyMap{position:absolute;inset:-36px;z-index:0;opacity:.74;filter:saturate(.95) contrast(.98) blur(.25px);transform:scale(1.02)}
-.card{position:relative;z-index:2;width:min(500px,100%);background:rgba(255,255,255,.46);border:1px solid rgba(255,255,255,.66);border-radius:30px;padding:26px;box-shadow:0 24px 76px rgba(0,0,0,.14);backdrop-filter:blur(30px) saturate(1.45)}
+.card{position:relative;z-index:2;width:min(500px,100%);background:linear-gradient(135deg,rgba(255,255,255,.56),rgba(255,255,255,.28) 48%,rgba(206,239,250,.28));border:1px solid rgba(255,255,255,.82);border-radius:30px;padding:26px;box-shadow:0 24px 76px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.78);backdrop-filter:blur(38px) saturate(1.55)}
+.card:before{content:"";position:absolute;inset:1px;border-radius:inherit;background:radial-gradient(circle at 18% 8%,rgba(255,255,255,.72),transparent 34%),linear-gradient(115deg,rgba(255,255,255,.34),transparent 42%);opacity:.7;pointer-events:none}
+.card>*{position:relative;z-index:1}
 .authCard{width:min(520px,100%)}
 .setupCard{width:min(560px,100%)}
 .cardTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:16px}
