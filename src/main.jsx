@@ -109,7 +109,7 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true)
   const [session, setSession] = useState(savedSession)
   const [authModalOpen, setAuthModalOpen] = useState(false)
-  const showLanding = false
+  const showLanding = window.location.pathname === '/landing' || new URLSearchParams(window.location.search).get('landing') === '1'
   const [landingOpen, setLandingOpen] = useState(() => showLanding && sessionStorage.getItem('trip_room_landing_seen') !== 'true')
 
   useEffect(() => {
@@ -638,6 +638,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const [mobileView, setMobileView] = useState('map')
   const [chat, setChat] = useState('')
   const [search, setSearch] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
   const [results, setResults] = useState([])
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [mobileSearchInput, setMobileSearchInput] = useState('')
@@ -1173,6 +1174,14 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     return true
   }
 
+  function handleSearchFocus() {
+    if (!openMobileSearch()) setSearchFocused(true)
+  }
+
+  function handleSearchBlur() {
+    setTimeout(() => setSearchFocused(false), 140)
+  }
+
   function searchPlaces(keyword = search, options = {}) {
     const trimmed = keyword.trim()
     if (!trimmed || !kakaoRef.current) return
@@ -1197,6 +1206,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     setSelectedPlace(place)
     setResults([])
     setSearch(place.place_name)
+    setSearchFocused(false)
     setMobileSearchInput(place.place_name)
     rememberSearchTerm(place.place_name)
     setMobileSearchOpen(false)
@@ -1213,6 +1223,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     const keyword = place.name
     setSearch(keyword)
     setMobileSearchInput(keyword)
+    setSearchFocused(false)
     searchPlaces(keyword)
   }
 
@@ -1820,14 +1831,14 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       <div className="mapSearch">
         <div className="searchBox">
           <Search size={20} />
-          <input placeholder="장소 검색 예: 오사카 맛집" value={search} onFocus={openMobileSearch} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && searchPlaces()} />
-          {search && <button className="clearSearch" onClick={() => { setSearch(''); setResults([]); setSelectedPlace(null) }} title="검색어 지우기"><X size={18} /></button>}
+          <input placeholder="장소 검색 예: 오사카 맛집" value={search} onFocus={handleSearchFocus} onBlur={handleSearchBlur} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && searchPlaces()} />
+          {search && <button className="clearSearch" onClick={() => { setSearch(''); setResults([]); setSelectedPlace(null); setSearchFocused(true) }} title="검색어 지우기"><X size={18} /></button>}
           <button onClick={() => openMobileSearch() || searchPlaces()}>검색</button>
         </div>
         {results.length > 0 && <div className="results">
           {results.map(r => <button key={r.id} onClick={() => selectSearchResult(r)}><b>{r.place_name}</b><span>{r.road_address_name || r.address_name}</span></button>)}
         </div>}
-        {!search.trim() && results.length === 0 && <div className="results popularResults">
+        {searchFocused && !search.trim() && results.length === 0 && <div className="results popularResults">
           {renderPopularPlaces()}
         </div>}
       </div>
