@@ -12,6 +12,7 @@ const ROOM_SESSION_STORAGE_KEY = 'trip_room_session'
 const SEARCH_STORAGE_KEY = 'trip_recent_searches'
 const PLACE_ORDER_STORAGE_KEY = 'trip_place_order'
 const ROUTE_COLORS = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#0a84ff', '#5856d6', '#af52de']
+const ROUTE_LOGOS = ['/wherego-logo.png', '/wherego-logo-orange.png']
 const MESSAGE_REACTIONS = ['❤️', '👍', '😂']
 const POPULAR_TRAVEL_PLACES = [
   { name: '해운대해수욕장', area: '부산 해운대구' },
@@ -69,8 +70,16 @@ function getRouteColor(index) {
   return ROUTE_COLORS[index % ROUTE_COLORS.length]
 }
 
+function getRouteLogo(index) {
+  return ROUTE_LOGOS[index % ROUTE_COLORS.length] || ROUTE_LOGOS[0]
+}
+
 function LogoMark({ className = '' }) {
   return <img className={className ? `brandLogo ${className}` : 'brandLogo'} src="/wherego-logo.png" alt="" aria-hidden="true" />
+}
+
+function RouteLogoMark({ index, className = '' }) {
+  return <img className={className ? `brandLogo ${className}` : 'brandLogo'} src={getRouteLogo(index)} alt="" aria-hidden="true" />
 }
 
 function PlaceIcon() {
@@ -909,7 +918,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       markerContent.className = 'routeMapPin'
       markerContent.style.setProperty('--route-color', getRouteColor(index))
       markerContent.title = `${index + 1}번째 장소: ${place.name}`
-      markerContent.innerHTML = '<span><img src="/wherego-logo.png" alt="" aria-hidden="true" /></span>'
+      markerContent.innerHTML = `<span><img src="${getRouteLogo(index)}" alt="" aria-hidden="true" /></span>`
       markerContent.addEventListener('click', event => {
         event.stopPropagation()
         focusPlace(place, { openDetail: true })
@@ -1299,7 +1308,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     const routeIndex = getPlaceRouteIndex(place.id)
     markerContent.style.setProperty('--route-color', getRouteColor(routeIndex >= 0 ? routeIndex : 0))
     markerContent.title = `${place.name} 상세 다시 열기`
-    markerContent.innerHTML = '<span><img src="/wherego-logo.png" alt="" aria-hidden="true" /></span>'
+    markerContent.innerHTML = `<span><img src="${getRouteLogo(routeIndex >= 0 ? routeIndex : 0)}" alt="" aria-hidden="true" /></span>`
     markerContent.addEventListener('click', event => {
       event.stopPropagation()
       setSelectedSavedPlace(place)
@@ -1809,7 +1818,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           title={`${p.name} 위치로 이동`}
         >
         <span className="placeStoryRing" style={{ '--route-color': getRouteColor(index) }}>
-          <LogoMark className="placeStoryIcon" />
+          <RouteLogoMark index={index} className="placeStoryIcon" />
           <em className="placeOrderBadge" style={{ '--route-color': getRouteColor(index) }}>{index + 1}</em>
         </span>
         <strong>{p.name}</strong>
