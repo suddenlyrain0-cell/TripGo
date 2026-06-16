@@ -69,6 +69,10 @@ function getRouteColor(index) {
   return ROUTE_COLORS[index % ROUTE_COLORS.length]
 }
 
+function LogoMark({ className = '' }) {
+  return <img className={className ? `brandLogo ${className}` : 'brandLogo'} src="/wherego-logo.png" alt="" aria-hidden="true" />
+}
+
 function buildMapSearchUrl(provider, place) {
   const query = encodeURIComponent(`${place?.name || ''} ${place?.address || ''}`.trim())
   if (provider === 'naver') return `https://map.naver.com/p/search/${query}`
@@ -226,7 +230,7 @@ function App() {
 function SetupRequired() {
   return <div className="lobby authLobby">
     <div className="card setupCard">
-      <div className="appMark"><MapPin size={22} /></div>
+      <div className="appMark"><LogoMark /></div>
       <h1>설정이 필요해요</h1>
       <p>Supabase 환경변수가 없어서 앱을 시작하지 못했어요. 프로젝트 루트에 <b>.env</b> 파일을 만들고 아래 값을 채워주세요.</p>
       <pre>{`VITE_SUPABASE_URL=your_supabase_project_url
@@ -255,7 +259,7 @@ function AuthScreen({ modal = false, onClose, onOAuthLogin, onGuestLogin }) {
 
   const content = <div className="card authCard">
       {modal && <button className="iconButton authCloseButton" onClick={onClose} title="닫기"><X size={20} /></button>}
-      <div className="appMark"><MapPin size={22} /></div>
+      <div className="appMark"><LogoMark /></div>
       <h1>어디가</h1>
       <p>로그인하고 나만의 여행 방을 직접 만들어 보세요.</p>
       <div className="authActions">
@@ -318,7 +322,7 @@ function Landing({ onStart }) {
     <div ref={heroMapRef} className="landingMap" aria-hidden="true" />
     <nav className="landingNav">
       <div className="landingBrand">
-        <span><MapPin size={19} /></span>
+        <span><LogoMark /></span>
         <b>어디가</b>
       </div>
       <div className="landingLinks">
@@ -344,7 +348,7 @@ function Landing({ onStart }) {
 
       <div className="heroVisual" aria-hidden="true">
         <div className="mapOrb">
-          <span className="mapOrbPin"><MapPin size={34} /></span>
+          <span className="mapOrbPin"><LogoMark /></span>
           <b>부평깡통시장</b>
           <small>#관광 · 수성이 추가</small>
         </div>
@@ -534,7 +538,7 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
       <div ref={lobbyMapRef} className="lobbyMap" aria-hidden="true" />
       <div className="card inviteCard">
         <div className="cardTop">
-          <div className="appMark"><MapPin size={22} /></div>
+          <div className="appMark"><LogoMark /></div>
           {authUser ? <div className="sessionPill">
             <span>{authUser.displayName.slice(0, 1)}</span>
             <div>
@@ -566,7 +570,7 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
     <div ref={lobbyMapRef} className="lobbyMap" aria-hidden="true" />
     <div className="card">
       <div className="cardTop">
-        <div className="appMark"><MapPin size={22} /></div>
+        <div className="appMark"><LogoMark /></div>
         {authUser ? <>
           <div className="sessionPill">
             <span>{authUser.displayName.slice(0, 1)}</span>
@@ -1793,7 +1797,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   return <div ref={roomLayoutRef} className={`${chatOpen ? 'room' : 'room chatCollapsed'} mobile-${mobileView}${selectedPlace || selectedSavedPlace ? ' placeSheetOpen' : ''}`} style={{ '--chat-width': `${chatWidth}px` }}>
     <aside className="roomList">
       <div className="roomListTop">
-        <div className="brandLockup"><span><MapPin size={18} /></span><b>어디가</b></div>
+        <div className="brandLockup"><span><LogoMark /></span><b>어디가</b></div>
         <button className="iconButton addRoomButton" onClick={openRoomManager} title="방 추가"><Plus size={21} /></button>
       </div>
       <p className="roomListLabel">내 룸</p>
@@ -1819,7 +1823,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       <section className="mobileMapTop">
         <header className="sideHeader">
           <div>
-            <h2><span className="mobileBrandMark"><MapPin size={17} /></span>어디가</h2>
+            <h2><span className="mobileBrandMark"><LogoMark /></span>어디가</h2>
           </div>
           <button className="iconButton mobileHeaderLogout" onClick={onLogout} title="로그아웃"><LogOut size={18} /></button>
         </header>
