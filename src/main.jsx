@@ -13,6 +13,14 @@ const SEARCH_STORAGE_KEY = 'trip_recent_searches'
 const PLACE_ORDER_STORAGE_KEY = 'trip_place_order'
 const ROUTE_COLORS = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#0a84ff', '#5856d6', '#af52de', '#ff2d55']
 const MESSAGE_REACTIONS = ['❤️', '👍', '😂']
+const POPULAR_TRAVEL_PLACES = [
+  { name: '해운대해수욕장', area: '부산 해운대구' },
+  { name: '감천문화마을', area: '부산 사하구' },
+  { name: '경복궁', area: '서울 종로구' },
+  { name: '성산일출봉', area: '제주 서귀포시' },
+  { name: '전주한옥마을', area: '전북 전주시' },
+  { name: '강릉 안목해변', area: '강원 강릉시' }
+]
 const BLOCKED_WORDS = ['시발', '씨발', '병신', '좆', '개새끼', 'fuck', 'shit']
 
 function safeParseJson(value) {
@@ -1201,6 +1209,26 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     searchPlaces(keyword)
   }
 
+  function searchPopularPlace(place) {
+    const keyword = place.name
+    setSearch(keyword)
+    setMobileSearchInput(keyword)
+    searchPlaces(keyword)
+  }
+
+  function renderPopularPlaces() {
+    return <div className="popularPlaces">
+      <b>최근 인기 장소</b>
+      <div>
+        {POPULAR_TRAVEL_PLACES.map(place => <button key={place.name} onClick={() => searchPopularPlace(place)}>
+          <span><MapPin size={16} /></span>
+          <strong>{place.name}</strong>
+          <small>{place.area}</small>
+        </button>)}
+      </div>
+    </div>
+  }
+
   function moveToCurrentLocation(options = {}) {
     const { silent = false } = options
     if (!silent) setLocationNotice('')
@@ -1799,6 +1827,9 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         {results.length > 0 && <div className="results">
           {results.map(r => <button key={r.id} onClick={() => selectSearchResult(r)}><b>{r.place_name}</b><span>{r.road_address_name || r.address_name}</span></button>)}
         </div>}
+        {!search.trim() && results.length === 0 && <div className="results popularResults">
+          {renderPopularPlaces()}
+        </div>}
       </div>
       {mobileSearchOpen && <section className="mobileSearchPage">
         <div className="mobileSearchHead">
@@ -1817,6 +1848,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
               {recentSearches.map(term => <button key={term} onClick={() => { setMobileSearchInput(term); searchPlaces(term) }}>{term}</button>)}
             </div>
           </>}
+          {mobileSearchInput.trim().length < 2 && renderPopularPlaces()}
           {mobileSearchInput.trim().length >= 2 && <div className="mobileSearchResults">
             {results.length > 0
               ? results.map(result => <button key={result.id} onClick={() => selectSearchResult(result)}>
