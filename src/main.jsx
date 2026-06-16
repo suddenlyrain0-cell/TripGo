@@ -2053,7 +2053,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         <span>지도</span>
       </button>
       <button className={mobileView === 'chat' ? 'active' : ''} onClick={() => { setMobileView('chat'); setChatOpen(true); setUnreadCount(0) }}>
-        <MessageCircle size={20} />
+        <img className="mobileTabIcon" src={mobileView === 'chat' ? '/nav-chat-active.png' : '/nav-chat-inactive.png'} alt="" aria-hidden="true" />
         <span>채팅</span>
         {unreadCount > 0 && <em>{unreadCount > 9 ? '9+' : unreadCount}</em>}
       </button>

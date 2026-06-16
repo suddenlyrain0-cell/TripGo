@@ -444,6 +444,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mobileTabBar button:nth-child(2){--tab-color:#ff9500}
   .mobileTabBar button:nth-child(3){--tab-color:#ffcc00}
   .mobileTabBar button.active{background:var(--tab-color);color:#fff}
+  .mobileTabIcon{width:26px;height:26px;display:block;object-fit:contain}
   .mobileTabBar span{font-size:11px;line-height:1}
   .mobileTabBar em{position:absolute;right:16px;top:5px;min-width:18px;height:18px;border-radius:99px;background:#ff3b30;color:#fff;border:2px solid #fff;font-size:10px;font-style:normal;display:grid;place-items:center;padding:0 4px}
   .card{padding:24px}.card h1{font-size:38px}.formStack label{grid-template-columns:1fr;padding:9px 13px}.formStack label span{font-size:13px}.tagPills{grid-template-columns:repeat(3,1fr)}
