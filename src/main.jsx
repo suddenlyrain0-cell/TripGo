@@ -991,8 +991,9 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     const markerContent = document.createElement('button')
     markerContent.type = 'button'
     markerContent.className = 'selectedMapPin'
+    markerContent.style.setProperty('--route-color', '#ff9500')
     markerContent.title = `${selectedPlace.place_name} 다시 열기`
-    markerContent.innerHTML = '<span></span>'
+    markerContent.innerHTML = '<span><img src="/wherego-place-icon.png" alt="" aria-hidden="true" /></span>'
     markerContent.addEventListener('click', event => {
       event.stopPropagation()
       setSelectedPlace(selectedPlace)
