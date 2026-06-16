@@ -678,6 +678,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const [tag, setTag] = useState('관광')
   const [memo, setMemo] = useState('')
   const [mapReady, setMapReady] = useState(false)
+  const [mapLevel, setMapLevel] = useState(5)
   const [locating, setLocating] = useState(false)
   const [locationNotice, setLocationNotice] = useState('')
   const [placeNotice, setPlaceNotice] = useState('')
@@ -757,6 +758,45 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     setTimeout(() => {
       if (mapObj.current?.panBy) mapObj.current.panBy(0, 132)
     }, 140)
+  }
+
+  function getScatteredMarkerPosition(place, index, list) {
+    const maps = kakaoRef.current?.maps
+    if (!maps || !mapObj.current) return null
+    const basePosition = new maps.LatLng(Number(place.lat), Number(place.lng))
+    if (mapLevel < 9 || list.length < 2) return basePosition
+
+    const projection = mapObj.current.getProjection?.()
+    const toPoint = projection?.containerPointFromCoords || projection?.pointFromCoords
+    const toCoords = projection?.coordsFromContainerPoint || projection?.coordsFromPoint
+    if (!projection || !toPoint || !toCoords) return basePosition
+
+    try {
+      const basePoint = toPoint.call(projection, basePosition)
+      const threshold = 48
+      const cluster = list
+        .map((candidate, candidateIndex) => {
+          const position = new maps.LatLng(Number(candidate.lat), Number(candidate.lng))
+          const point = toPoint.call(projection, position)
+          const dx = point.x - basePoint.x
+          const dy = point.y - basePoint.y
+          return { candidateIndex, distance: Math.hypot(dx, dy) }
+        })
+        .filter(item => item.distance <= threshold)
+
+      if (cluster.length < 2) return basePosition
+
+      const clusterPosition = cluster.findIndex(item => item.candidateIndex === index)
+      const radius = 30 + Math.min(Math.max(mapLevel - 9, 0), 4) * 5
+      const angle = -Math.PI / 2 + (Math.PI * 2 * clusterPosition) / cluster.length
+      const scatteredPoint = new maps.Point(
+        basePoint.x + Math.cos(angle) * radius,
+        basePoint.y + Math.sin(angle) * radius
+      )
+      return toCoords.call(projection, scatteredPoint)
+    } catch {
+      return basePosition
+    }
   }
 
   useEffect(() => {
@@ -843,12 +883,16 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     loadKakaoMap().then(kakao => {
       kakaoRef.current = kakao
       mapObj.current = new kakao.maps.Map(mapRef.current, { center: new kakao.maps.LatLng(37.5665, 126.9780), level: 5 })
+      setMapLevel(mapObj.current.getLevel())
       kakao.maps.event.addListener(mapObj.current, 'click', () => {
         setResults([])
         setSelectedPlace(null)
         setSelectedSavedPlace(null)
       })
       kakao.maps.event.addListener(mapObj.current, 'dragstart', () => setResults([]))
+      kakao.maps.event.addListener(mapObj.current, 'zoom_changed', () => {
+        setMapLevel(mapObj.current.getLevel())
+      })
       setMapReady(true)
     })
   }, [])
@@ -947,14 +991,14 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         focusPlace(place, { openDetail: true })
       })
       return new kakaoRef.current.maps.CustomOverlay({
-        position: new kakaoRef.current.maps.LatLng(place.lat, place.lng),
+        position: getScatteredMarkerPosition(place, index, orderedPlaces) || new kakaoRef.current.maps.LatLng(place.lat, place.lng),
         content: markerContent,
         yAnchor: 1,
         zIndex: 9,
         map: mapObj.current
       })
     })
-  }, [places, mapReady])
+  }, [places, mapReady, mapLevel])
 
   useEffect(() => {
     if (!mapReady || !kakaoRef.current || !mapObj.current) return

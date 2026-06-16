@@ -294,7 +294,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .side>.places>b{display:none}
 .side>.places .placeStoryScroller{margin-top:0}
 .chatStack{position:relative;min-height:0;overflow:hidden}
-.noticeBar{position:absolute;z-index:5;top:10px;left:12px;right:12px;min-height:42px;display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:8px;padding:9px 12px;border-radius:15px;background:rgba(255,59,48,.12);border:1px solid rgba(255,59,48,.2);box-shadow:0 12px 34px rgba(255,59,48,.12);color:#ff3b30;text-align:left;backdrop-filter:blur(28px) saturate(1.35)}
+.noticeBar{position:absolute;z-index:5;top:10px;left:12px;right:12px;min-height:42px;display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:8px;padding:9px 16px;border-radius:999px;background:rgba(255,59,48,.12);border:1px solid rgba(255,59,48,.2);box-shadow:0 12px 34px rgba(255,59,48,.12);color:#ff3b30;text-align:left;backdrop-filter:blur(28px) saturate(1.35)}
 .noticeBar span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#1d1d1f;font-size:14px;font-weight:850}
 .chatStack:has(.noticeBar) .chat{padding-top:66px}
 .places b{font-size:15px}
