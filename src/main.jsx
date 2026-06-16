@@ -2049,7 +2049,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         <span>내 룸</span>
       </button>
       <button className={mobileView === 'map' ? 'active' : ''} onClick={() => setMobileView('map')}>
-        <LocateFixed size={20} />
+        <img className="mobileTabIcon" src={mobileView === 'map' ? '/wherego-logo-orange.png' : '/wherego-place-icon.png'} alt="" aria-hidden="true" />
         <span>지도</span>
       </button>
       <button className={mobileView === 'chat' ? 'active' : ''} onClick={() => { setMobileView('chat'); setChatOpen(true); setUnreadCount(0) }}>
