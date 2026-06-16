@@ -10,6 +10,8 @@ const MIN_LOADING_MS = 700
 const AUTH_STORAGE_KEY = 'trip_auth_user'
 const ROOM_SESSION_STORAGE_KEY = 'trip_room_session'
 const SEARCH_STORAGE_KEY = 'trip_recent_searches'
+const PLACE_ORDER_STORAGE_KEY = 'trip_place_order'
+const ROUTE_COLORS = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#0a84ff', '#5856d6', '#af52de', '#ff2d55']
 const BLOCKED_WORDS = ['시발', '씨발', '병신', '좆', '개새끼', 'fuck', 'shit']
 
 function safeParseJson(value) {
@@ -52,6 +54,10 @@ function getProviderLabel(provider) {
 function normalizeDisplayName(value, fallback) {
   const compact = String(value || '').trim()
   return (compact || fallback).slice(0, MAX_NAME_LENGTH)
+}
+
+function getRouteColor(index) {
+  return ROUTE_COLORS[index % ROUTE_COLORS.length]
 }
 
 function buildOAuthUser(authSession) {
@@ -574,13 +580,59 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const mapObj = useRef(null)
   const markersRef = useRef([])
   const selectedMarkerRef = useRef(null)
+  const routeLineRef = useRef(null)
+  const orderOverlaysRef = useRef([])
   const currentMarkerRef = useRef(null)
   const kakaoRef = useRef(null)
   const chatRef = useRef(null)
+  const placeDragRef = useRef({ timer: null, id: null, active: false, targetId: null })
+  const suppressStoryClickRef = useRef(false)
+  const placeOrderSaveBlockedRef = useRef(false)
   const chatOpenRef = useRef(chatOpen)
   const mobileViewRef = useRef(mobileView)
   const resizingRef = useRef(false)
   const roomLayoutRef = useRef(null)
+
+  function getStoredPlaceOrder() {
+    const stored = safeParseJson(localStorage.getItem(PLACE_ORDER_STORAGE_KEY)) || {}
+    return Array.isArray(stored[session.roomId]) ? stored[session.roomId] : []
+  }
+
+  function saveStoredPlaceOrder(nextPlaces) {
+    const stored = safeParseJson(localStorage.getItem(PLACE_ORDER_STORAGE_KEY)) || {}
+    stored[session.roomId] = nextPlaces.map(place => place.id)
+    localStorage.setItem(PLACE_ORDER_STORAGE_KEY, JSON.stringify(stored))
+  }
+
+  function placeOrderValue(place, storedOrder) {
+    const explicitOrder = Number(place.sort_order)
+    if (Number.isFinite(explicitOrder)) return explicitOrder
+    const storedIndex = storedOrder.indexOf(place.id)
+    if (storedIndex >= 0) return storedIndex
+    return Number.MAX_SAFE_INTEGER
+  }
+
+  function orderPlaces(list) {
+    const storedOrder = getStoredPlaceOrder()
+    return [...list].sort((a, b) => {
+      const orderDiff = placeOrderValue(a, storedOrder) - placeOrderValue(b, storedOrder)
+      if (orderDiff !== 0) return orderDiff
+      return new Date(a.created_at || 0) - new Date(b.created_at || 0)
+    })
+  }
+
+  const orderedPlaces = orderPlaces(places)
+
+  function isMobileViewport() {
+    return window.matchMedia?.('(max-width: 720px)').matches
+  }
+
+  function liftMapForMobileSheet() {
+    if (!isMobileViewport() || !mapObj.current) return
+    setTimeout(() => {
+      if (mapObj.current?.panBy) mapObj.current.panBy(0, -120)
+    }, 140)
+  }
 
   useEffect(() => {
     chatOpenRef.current = chatOpen
@@ -611,10 +663,10 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'places', filter: `room_id=eq.${session.roomId}` }, payload => {
         if (payload.eventType === 'INSERT') {
-          setPlaces(prev => prev.some(place => place.id === payload.new.id) ? prev : [...prev, payload.new])
+          setPlaces(prev => prev.some(place => place.id === payload.new.id) ? prev : orderPlaces([...prev, payload.new]))
         }
         if (payload.eventType === 'UPDATE') {
-          setPlaces(prev => prev.map(place => place.id === payload.new.id ? payload.new : place))
+          setPlaces(prev => orderPlaces(prev.map(place => place.id === payload.new.id ? payload.new : place)))
         }
         if (payload.eventType === 'DELETE') {
           setPlaces(prev => prev.filter(place => place.id !== payload.old.id))
@@ -752,6 +804,58 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
 
   useEffect(() => {
     if (!mapReady || !kakaoRef.current || !mapObj.current) return
+    if (routeLineRef.current) {
+      routeLineRef.current.setMap(null)
+      routeLineRef.current = null
+    }
+    orderOverlaysRef.current.forEach(overlay => overlay.setMap(null))
+    orderOverlaysRef.current = []
+
+    const positions = orderedPlaces.map(place => new kakaoRef.current.maps.LatLng(Number(place.lat), Number(place.lng)))
+    if (positions.length > 1) {
+      routeLineRef.current = new kakaoRef.current.maps.Polyline({
+        map: mapObj.current,
+        path: positions,
+        strokeWeight: 3,
+        strokeColor: '#5f6368',
+        strokeOpacity: 0.72,
+        strokeStyle: 'dash'
+      })
+    }
+
+    orderOverlaysRef.current = orderedPlaces.map((place, index) => {
+      const badge = document.createElement('button')
+      badge.type = 'button'
+      badge.className = 'routeOrderBadge'
+      badge.style.setProperty('--route-color', getRouteColor(index))
+      badge.textContent = String(index + 1)
+      badge.title = `${index + 1}번째 장소: ${place.name}`
+      badge.addEventListener('click', event => {
+        event.stopPropagation()
+        focusPlace(place, { openDetail: true })
+      })
+      return new kakaoRef.current.maps.CustomOverlay({
+        position: positions[index],
+        content: badge,
+        xAnchor: 0.16,
+        yAnchor: 1.28,
+        zIndex: 12,
+        map: mapObj.current
+      })
+    })
+
+    return () => {
+      if (routeLineRef.current) {
+        routeLineRef.current.setMap(null)
+        routeLineRef.current = null
+      }
+      orderOverlaysRef.current.forEach(overlay => overlay.setMap(null))
+      orderOverlaysRef.current = []
+    }
+  }, [places, mapReady])
+
+  useEffect(() => {
+    if (!mapReady || !kakaoRef.current || !mapObj.current) return
     if (selectedMarkerRef.current) {
       selectedMarkerRef.current.setMap(null)
       selectedMarkerRef.current = null
@@ -776,6 +880,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       map: mapObj.current
     })
     mapObj.current.panTo(position)
+    liftMapForMobileSheet()
   }, [selectedPlace, mapReady])
 
   async function loadInitial() {
@@ -788,7 +893,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     ])
     setMessages(msg || [])
     setMembers(mem || [])
-    setPlaces(plc || [])
+    setPlaces(orderPlaces(plc || []))
     setPlaceComments(comments || [])
     setRoomInfo(room || { owner: '' })
   }
@@ -1080,6 +1185,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       zIndex: 11,
       map: mapObj.current
     })
+    if (openDetail) liftMapForMobileSheet()
   }
 
   async function addPlace() {
@@ -1280,6 +1386,100 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     })
   }
 
+  async function persistPlaceOrder(nextPlaces) {
+    saveStoredPlaceOrder(nextPlaces)
+    const updates = nextPlaces
+      .filter(place => !String(place.id).startsWith('temp-'))
+      .map((place, index) => supabase.from('places').update({ sort_order: index }).eq('id', place.id))
+
+    if (updates.length === 0) return
+    const results = await Promise.all(updates)
+    const failed = results.find(result => result.error)
+    if (failed && !placeOrderSaveBlockedRef.current) {
+      placeOrderSaveBlockedRef.current = true
+      console.warn('장소 순서를 Supabase에 저장하지 못했어요. sort_order 컬럼 마이그레이션이 필요할 수 있어요.', failed.error)
+    }
+  }
+
+  function reorderPlaces(sourceId, targetId) {
+    if (!sourceId || !targetId || sourceId === targetId) return
+    const sourceIndex = orderedPlaces.findIndex(place => place.id === sourceId)
+    const targetIndex = orderedPlaces.findIndex(place => place.id === targetId)
+    if (sourceIndex < 0 || targetIndex < 0) return
+
+    const nextOrdered = [...orderedPlaces]
+    const [movedPlace] = nextOrdered.splice(sourceIndex, 1)
+    nextOrdered.splice(targetIndex, 0, movedPlace)
+    const withOrder = nextOrdered.map((place, index) => ({ ...place, sort_order: index }))
+    const byId = new Map(withOrder.map(place => [place.id, place]))
+
+    setPlaces(prev => prev.map(place => byId.get(place.id) || place))
+    persistPlaceOrder(withOrder)
+  }
+
+  function handlePlaceDragStart(event, placeId) {
+    placeDragRef.current = { timer: null, id: placeId, active: true, targetId: placeId }
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', placeId)
+    setTimeout(() => {
+      setFocusedPlaceId(placeId)
+    }, 0)
+  }
+
+  function handlePlaceDrop(event, targetId) {
+    event.preventDefault()
+    const sourceId = event.dataTransfer.getData('text/plain') || placeDragRef.current.id
+    reorderPlaces(sourceId, targetId)
+    placeDragRef.current = { timer: null, id: null, active: false, targetId: null }
+  }
+
+  function clearPlacePressTimer() {
+    if (placeDragRef.current.timer) clearTimeout(placeDragRef.current.timer)
+    placeDragRef.current.timer = null
+  }
+
+  function startPlaceLongPress(event, placeId) {
+    if (event.pointerType === 'mouse') return
+    clearPlacePressTimer()
+    placeDragRef.current = {
+      timer: setTimeout(() => {
+        placeDragRef.current.active = true
+        placeDragRef.current.targetId = placeId
+        suppressStoryClickRef.current = true
+        setFocusedPlaceId(placeId)
+      }, 360),
+      id: placeId,
+      active: false,
+      targetId: placeId
+    }
+  }
+
+  function movePlaceLongPress(event) {
+    if (!placeDragRef.current.active) return
+    const element = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-place-id]')
+    const nextTargetId = element?.dataset.placeId
+    if (nextTargetId) {
+      placeDragRef.current.targetId = nextTargetId
+      setFocusedPlaceId(nextTargetId)
+    }
+  }
+
+  function finishPlaceLongPress() {
+    const { id, active, targetId } = placeDragRef.current
+    clearPlacePressTimer()
+    if (active) reorderPlaces(id, targetId)
+    placeDragRef.current = { timer: null, id: null, active: false, targetId: null }
+    setTimeout(() => {
+      suppressStoryClickRef.current = false
+    }, 80)
+  }
+
+  function handlePlaceStoryClick(place) {
+    if (suppressStoryClickRef.current) return
+    focusPlace(place)
+    setMobileView('map')
+  }
+
   const filteredManagerRooms = allRooms
     .filter(room => room.name.toLowerCase().includes(roomQuery.trim().toLowerCase()))
     .slice(0, 6)
@@ -1294,8 +1494,25 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           <strong>장소 추가</strong>
           <small>검색</small>
         </button>
-        {places.map(p => <button key={p.id} className={focusedPlaceId === p.id ? 'placeStory active' : 'placeStory'} onClick={() => { focusPlace(p); setMobileView('map') }} title={`${p.name} 위치로 이동`}>
-        <span className="placeStoryRing"><MapPin size={22} /></span>
+        {orderedPlaces.map((p, index) => <button
+          key={p.id}
+          className={focusedPlaceId === p.id ? 'placeStory active' : 'placeStory'}
+          data-place-id={p.id}
+          draggable
+          onClick={() => handlePlaceStoryClick(p)}
+          onDragStart={event => handlePlaceDragStart(event, p.id)}
+          onDragOver={event => event.preventDefault()}
+          onDrop={event => handlePlaceDrop(event, p.id)}
+          onPointerDown={event => startPlaceLongPress(event, p.id)}
+          onPointerMove={movePlaceLongPress}
+          onPointerUp={finishPlaceLongPress}
+          onPointerCancel={finishPlaceLongPress}
+          title={`${p.name} 위치로 이동`}
+        >
+        <span className="placeStoryRing">
+          <MapPin size={22} />
+          <em className="placeOrderBadge" style={{ '--route-color': getRouteColor(index) }}>{index + 1}</em>
+        </span>
         <strong>{p.name}</strong>
         <small>#{p.tag}</small>
         </button>)}
@@ -1304,7 +1521,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     </>
   }
 
-  return <div ref={roomLayoutRef} className={`${chatOpen ? 'room' : 'room chatCollapsed'} mobile-${mobileView}`} style={{ '--chat-width': `${chatWidth}px` }}>
+  return <div ref={roomLayoutRef} className={`${chatOpen ? 'room' : 'room chatCollapsed'} mobile-${mobileView}${selectedPlace || selectedSavedPlace ? ' placeSheetOpen' : ''}`} style={{ '--chat-width': `${chatWidth}px` }}>
     <aside className="roomList">
       <div className="roomListTop">
         <div className="brandLockup"><span><MapPin size={18} /></span><b>어디가</b></div>

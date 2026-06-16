@@ -35,6 +35,7 @@ create table if not exists places (
   lng double precision not null,
   tag text default '기타',
   memo text,
+  sort_order integer,
   created_at timestamptz default now()
 );
 
@@ -64,5 +65,6 @@ create policy "public read messages" on messages for select using (true);
 create policy "public insert messages" on messages for insert with check (true);
 create policy "public read places" on places for select using (true);
 create policy "public insert places" on places for insert with check (true);
+create policy "public update places" on places for update using (true) with check (true);
 create policy "public read place comments" on place_comments for select using (true);
 create policy "public insert place comments" on place_comments for insert with check (true);
