@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ArrowLeft, Crown, Image, Link2, LocateFixed, LogOut, MapPin, MessageCircle, PanelRightClose, Plus, Search, Send, Trash2, UserMinus, Users, X } from 'lucide-react'
+import { ArrowLeft, Crown, Link2, LocateFixed, LogOut, MapPin, Megaphone, MessageCircle, PanelRightClose, Plus, Search, Send, Trash2, UserMinus, Users, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './supabase'
 import './style.css'
 
@@ -626,6 +626,8 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const [joinedRooms, setJoinedRooms] = useState([])
   const [chatOpen, setChatOpen] = useState(true)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [noticeMode, setNoticeMode] = useState(false)
+  const [noticeDetailOpen, setNoticeDetailOpen] = useState(false)
   const [membersOpen, setMembersOpen] = useState(false)
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
@@ -1420,6 +1422,26 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   async function sendMessage() {
     const content = chat.trim()
     if (!content) return
+    if (noticeMode) {
+      setChat('')
+      const nextNotice = {
+        ...(roomInfo || {}),
+        notice: content,
+        notice_by: session.username,
+        notice_updated_at: new Date().toISOString()
+      }
+      setRoomInfo(nextNotice)
+      setNoticeMode(false)
+      const { error } = await supabase
+        .from('rooms')
+        .update({ notice: content, notice_by: session.username, notice_updated_at: nextNotice.notice_updated_at })
+        .eq('id', session.roomId)
+
+      if (error) {
+        setLocationNotice('공지를 저장하지 못했어요. Supabase rooms 공지 컬럼을 확인해주세요.')
+      }
+      return
+    }
     const optimisticId = `temp-message-${Date.now()}`
     const optimisticMessage = {
       id: optimisticId,
@@ -1955,6 +1977,10 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           {renderPlaceStories()}
         </section>
         <div className="chatStack">
+          {roomInfo?.notice?.trim() && <button className="noticeBar" onClick={() => setNoticeDetailOpen(true)} title="공지 상세보기">
+            <Megaphone size={19} />
+            <span>{roomInfo.notice}</span>
+          </button>}
           <div className="inviteStrip">
             <button onClick={copyInviteLink}><Link2 size={17} /> 초대하기</button>
             {inviteNotice && <span>{inviteNotice}</span>}
@@ -1992,7 +2018,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           </div>
         }) : <div className="emptyChat">아직 채팅이 없어요.</div>}</section>
         </div>
-        <footer><button className="roundButton" title="이미지"><Image size={21} /></button><input placeholder="메시지 입력..." value={chat} onChange={e => setChat(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} /><button className="roundButton send" onClick={sendMessage} title="전송"><Send size={20} /></button></footer>
+        <footer><button className={noticeMode ? 'roundButton noticeToggle active' : 'roundButton noticeToggle'} onClick={() => setNoticeMode(mode => !mode)} title="공지 쓰기"><Megaphone size={21} /></button><input placeholder={noticeMode ? '공지 입력...' : '메시지 입력...'} value={chat} onChange={e => setChat(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} /><button className="roundButton send" onClick={sendMessage} title="전송"><Send size={20} /></button></footer>
       </> : <div className="chatRail">
         <button className="railButton" onClick={() => setChatOpen(true)} title="채팅 펼치기">
           <MessageCircle size={23} />
@@ -2015,6 +2041,18 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         {unreadCount > 0 && <em>{unreadCount > 9 ? '9+' : unreadCount}</em>}
       </button>
     </nav>
+    {noticeDetailOpen && <div className="modalBackdrop" onClick={() => setNoticeDetailOpen(false)}>
+      <div className="noticeDetailModal" onClick={e => e.stopPropagation()}>
+        <div className="modalHead">
+          <div>
+            <b>공지</b>
+            <span>{roomInfo.notice_by ? `${roomInfo.notice_by}님이 등록` : session.roomName}</span>
+          </div>
+          <button className="iconButton" onClick={() => setNoticeDetailOpen(false)} title="닫기"><X size={20} /></button>
+        </div>
+        <p>{roomInfo.notice}</p>
+      </div>
+    </div>}
     {membersOpen && <div className="modalBackdrop" onClick={() => setMembersOpen(false)}>
       <div className="membersModal" onClick={e => e.stopPropagation()}>
         <div className="modalHead">

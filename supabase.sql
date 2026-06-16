@@ -5,6 +5,9 @@ create table if not exists rooms (
   name text not null,
   password text not null,
   owner text,
+  notice text,
+  notice_by text,
+  notice_updated_at timestamptz,
   created_at timestamptz default now()
 );
 
