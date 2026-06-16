@@ -12,7 +12,15 @@ const ROOM_SESSION_STORAGE_KEY = 'trip_room_session'
 const SEARCH_STORAGE_KEY = 'trip_recent_searches'
 const PLACE_ORDER_STORAGE_KEY = 'trip_place_order'
 const ROUTE_COLORS = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#0a84ff', '#5856d6', '#af52de']
-const ROUTE_LOGOS = ['/wherego-logo.png', '/wherego-logo-orange.png']
+const ROUTE_LOGOS = [
+  '/wherego-logo.png',
+  '/wherego-logo-orange.png',
+  '/wherego-logo-yellow.png',
+  '/wherego-logo-green.png',
+  '/wherego-logo-blue.png',
+  '/wherego-logo-indigo.png',
+  '/wherego-logo-violet.png'
+]
 const MESSAGE_REACTIONS = ['❤️', '👍', '😂']
 const POPULAR_TRAVEL_PLACES = [
   { name: '해운대해수욕장', area: '부산 해운대구' },
