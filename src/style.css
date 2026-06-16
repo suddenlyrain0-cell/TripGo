@@ -279,13 +279,9 @@ body.resizingChat{cursor:col-resize;user-select:none}
 }
 .places{min-height:0;padding:15px 18px 13px;border-bottom:1px solid rgba(0,0,0,.08);overflow:hidden}
 .chatStack{position:relative;min-height:0;overflow:hidden}
-.noticeBar{position:absolute;z-index:5;top:10px;left:12px;right:12px;min-height:42px;display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:8px;padding:9px 12px;border-radius:15px;background:rgba(255,255,255,.58);border:1px solid rgba(255,255,255,.76);box-shadow:0 12px 34px rgba(0,0,0,.12);color:#0a84ff;text-align:left;backdrop-filter:blur(28px) saturate(1.35)}
-.noticeBar span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#1d1d1f;font-size:14px;font-weight:800}
+.noticeBar{position:absolute;z-index:5;top:10px;left:12px;right:12px;min-height:42px;display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:8px;padding:9px 12px;border-radius:15px;background:rgba(255,59,48,.12);border:1px solid rgba(255,59,48,.2);box-shadow:0 12px 34px rgba(255,59,48,.12);color:#ff3b30;text-align:left;backdrop-filter:blur(28px) saturate(1.35)}
+.noticeBar span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#1d1d1f;font-size:14px;font-weight:850}
 .chatStack:has(.noticeBar) .chat{padding-top:66px}
-.inviteStrip{position:absolute;z-index:4;top:10px;right:12px;display:flex;align-items:center;justify-content:flex-end;gap:8px;pointer-events:none}
-.chatStack:has(.noticeBar) .inviteStrip{top:60px}
-.inviteStrip button{height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 14px;border-radius:18px;background:rgba(255,59,48,.12);color:#ff3b30;font-size:14px;font-weight:900;border:1px solid rgba(255,59,48,.2);box-shadow:0 10px 24px rgba(255,59,48,.08);backdrop-filter:blur(18px) saturate(1.25);pointer-events:auto}
-.inviteStrip span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#ff3b30;font-size:12px;font-weight:820}
 .places b{font-size:15px}
 .placeStoryScroller{display:flex;gap:12px;margin-top:12px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .placeStoryScroller::-webkit-scrollbar{height:0}
@@ -331,6 +327,9 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .modalHead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 2px 14px}
 .modalHead b{display:block;font-size:22px}
 .modalHead span{display:block;margin-top:3px;color:#6e6e73;font-weight:700}
+.memberInvitePanel{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:10px;border-radius:16px;background:rgba(255,59,48,.08);border:1px solid rgba(255,59,48,.14);box-shadow:0 10px 24px rgba(255,59,48,.06);backdrop-filter:blur(18px) saturate(1.25)}
+.memberInvitePanel button{height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 14px;border-radius:18px;background:rgba(255,59,48,.13);color:#ff3b30;font-size:14px;font-weight:900;border:1px solid rgba(255,59,48,.2);white-space:nowrap}
+.memberInvitePanel span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#ff3b30;font-size:12px;font-weight:820}
 .memberList{display:grid;gap:8px}
 .memberList div{min-height:54px;display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 10px;border-radius:15px;background:#f5f5f7}
 .memberList span{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:#0a84ff;color:#fff;font-weight:900}
@@ -408,7 +407,6 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mobile-chat .chatResizeHandle{display:none}
   .mobile-chat .chatCollapseButton{display:none}
   .mobile-chat .sideHeader{min-height:64px;padding:10px 16px}
-  .mobile-chat .inviteStrip{top:8px;right:10px}
   .mobile-chat .side>.places{display:none}
   .mobile-chat .chat{padding:16px;background:rgba(250,250,250,.78)}
   .mobile-chat .side footer{grid-template-columns:40px minmax(0,1fr) 40px;gap:8px;padding:10px 12px 12px}

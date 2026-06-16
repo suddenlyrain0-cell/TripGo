@@ -1981,10 +1981,6 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             <Megaphone size={19} />
             <span>{roomInfo.notice}</span>
           </button>}
-          <div className="inviteStrip">
-            <button onClick={copyInviteLink}><Link2 size={17} /> 초대하기</button>
-            {inviteNotice && <span>{inviteNotice}</span>}
-          </div>
           <section className="chat" ref={chatRef}>{messages.length > 0 ? messages.map(m => {
           const placeMessage = m.type === 'place_comment' ? parsePlaceMessage(m) : null
           if (placeMessage) {
@@ -2061,6 +2057,10 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             <span>{session.roomName}</span>
           </div>
           <button className="iconButton" onClick={() => setMembersOpen(false)} title="닫기"><X size={20} /></button>
+        </div>
+        <div className="memberInvitePanel">
+          <button onClick={copyInviteLink}><Link2 size={17} /> 초대 링크 복사</button>
+          {inviteNotice && <span>{inviteNotice}</span>}
         </div>
         <div className="memberList">{members.map(m => {
           const memberIsOwner = m.username === ownerName
