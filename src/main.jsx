@@ -773,7 +773,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
 
     try {
       const basePoint = toPoint.call(projection, basePosition)
-      const threshold = 48
+      const threshold = 40
       const cluster = list
         .map((candidate, candidateIndex) => {
           const position = new maps.LatLng(Number(candidate.lat), Number(candidate.lng))
@@ -787,7 +787,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       if (cluster.length < 2) return basePosition
 
       const clusterPosition = cluster.findIndex(item => item.candidateIndex === index)
-      const radius = 30 + Math.min(Math.max(mapLevel - 9, 0), 4) * 5
+      const radius = 10 + Math.min(Math.max(mapLevel - 9, 0), 4) * 2
       const angle = -Math.PI / 2 + (Math.PI * 2 * clusterPosition) / cluster.length
       const scatteredPoint = new maps.Point(
         basePoint.x + Math.cos(angle) * radius,
