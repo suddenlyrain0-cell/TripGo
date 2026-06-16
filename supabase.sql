@@ -61,12 +61,27 @@ create table if not exists message_reactions (
   unique(message_id, username)
 );
 
+create table if not exists analytics_events (
+  id uuid primary key default gen_random_uuid(),
+  event_name text not null,
+  visitor_id text,
+  user_id text,
+  room_id uuid references rooms(id) on delete set null,
+  metadata jsonb default '{}'::jsonb,
+  created_at timestamptz default now()
+);
+
+create index if not exists analytics_events_event_name_created_at_idx on analytics_events(event_name, created_at);
+create index if not exists analytics_events_created_at_idx on analytics_events(created_at);
+create index if not exists analytics_events_room_id_created_at_idx on analytics_events(room_id, created_at);
+
 alter table rooms enable row level security;
 alter table room_members enable row level security;
 alter table messages enable row level security;
 alter table places enable row level security;
 alter table place_comments enable row level security;
 alter table message_reactions enable row level security;
+alter table analytics_events enable row level security;
 
 drop policy if exists "public read rooms" on rooms;
 drop policy if exists "public insert rooms" on rooms;
@@ -87,6 +102,8 @@ drop policy if exists "public read message reactions" on message_reactions;
 drop policy if exists "public insert message reactions" on message_reactions;
 drop policy if exists "public update message reactions" on message_reactions;
 drop policy if exists "public delete message reactions" on message_reactions;
+drop policy if exists "public insert analytics events" on analytics_events;
+drop policy if exists "public read analytics events" on analytics_events;
 
 create policy "public read rooms" on rooms for select using (true);
 create policy "public insert rooms" on rooms for insert with check (true);
@@ -107,3 +124,4 @@ create policy "public read message reactions" on message_reactions for select us
 create policy "public insert message reactions" on message_reactions for insert with check (true);
 create policy "public update message reactions" on message_reactions for update using (true) with check (true);
 create policy "public delete message reactions" on message_reactions for delete using (true);
+create policy "public insert analytics events" on analytics_events for insert with check (true);

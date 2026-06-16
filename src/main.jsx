@@ -11,6 +11,8 @@ const AUTH_STORAGE_KEY = 'trip_auth_user'
 const ROOM_SESSION_STORAGE_KEY = 'trip_room_session'
 const SEARCH_STORAGE_KEY = 'trip_recent_searches'
 const PLACE_ORDER_STORAGE_KEY = 'trip_place_order'
+const ANALYTICS_VISITOR_STORAGE_KEY = 'trip_analytics_visitor'
+const ANALYTICS_DAILY_VISIT_STORAGE_KEY = 'trip_analytics_daily_visit'
 const ROUTE_COLORS = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#0a84ff', '#5856d6', '#af52de']
 const ROUTE_LOGOS = [
   '/wherego-logo.png',
@@ -42,6 +44,28 @@ function safeParseJson(value) {
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function getAnalyticsVisitorId() {
+  const stored = localStorage.getItem(ANALYTICS_VISITOR_STORAGE_KEY)
+  if (stored) return stored
+  const next = window.crypto?.randomUUID?.() || `visitor-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  localStorage.setItem(ANALYTICS_VISITOR_STORAGE_KEY, next)
+  return next
+}
+
+function trackAnalyticsEvent(eventName, metadata = {}) {
+  if (!isSupabaseConfigured) return
+  const { userId = null, roomId = null, ...rest } = metadata
+  supabase.from('analytics_events').insert({
+    event_name: eventName,
+    visitor_id: getAnalyticsVisitorId(),
+    user_id: userId,
+    room_id: roomId,
+    metadata: rest
+  }).then(({ error }) => {
+    if (error) console.warn('analytics event failed', eventName, error)
+  })
 }
 
 function hasBlockedWord(value) {
@@ -192,6 +216,18 @@ function App() {
     localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
     setSession(null)
   }, [authUser, session?.authId])
+
+  useEffect(() => {
+    if (authLoading) return
+    const today = new Date().toISOString().slice(0, 10)
+    if (localStorage.getItem(ANALYTICS_DAILY_VISIT_STORAGE_KEY) === today) return
+    localStorage.setItem(ANALYTICS_DAILY_VISIT_STORAGE_KEY, today)
+    trackAnalyticsEvent('daily_visit', {
+      userId: authUser?.id || null,
+      provider: authUser?.provider || 'guest',
+      path: window.location.pathname
+    })
+  }, [authLoading, authUser?.id, authUser?.provider])
 
   function startService() {
     sessionStorage.setItem('trip_room_landing_seen', 'true')
@@ -468,6 +504,11 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
   async function fetchInviteRoom() {
     const roomId = new URLSearchParams(window.location.search).get('room')
     if (!roomId) return
+    trackAnalyticsEvent('invite_link_opened', {
+      userId: authUser?.id || null,
+      roomId,
+      provider: authUser?.provider || 'guest'
+    })
     setInviteLoading(true)
     const { data, error } = await supabase.from('rooms').select('*').eq('id', roomId).single()
     if (data && !error) {
@@ -532,6 +573,12 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
       setLoading(false)
       return
     }
+    trackAnalyticsEvent('room_created', {
+      userId: authUser.id,
+      roomId: data.id,
+      provider: authUser.provider,
+      source: 'lobby'
+    })
     await enterRoom(data)
   }
 
@@ -1224,6 +1271,12 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       return
     }
     await withMinimumLoading(() => supabase.from('room_members').upsert({ room_id: data.id, username: session.username }, { onConflict: 'room_id,username' }))
+    trackAnalyticsEvent('room_created', {
+      userId: authUser?.id || session.authId || null,
+      roomId: data.id,
+      provider: authUser?.provider || session.provider || 'guest',
+      source: 'room_manager'
+    })
     rememberJoinedRoom(data)
     await loadJoinedRooms()
     setRoomLoading(false)
@@ -1275,6 +1328,13 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     if (!trimmed || !kakaoRef.current) return
     const ps = new kakaoRef.current.maps.services.Places()
     ps.keywordSearch(trimmed, (data, status) => {
+      trackAnalyticsEvent('place_search', {
+        userId: authUser?.id || session.authId || null,
+        roomId: session.roomId,
+        keyword: trimmed,
+        result_count: status === kakaoRef.current.maps.services.Status.OK ? data.length : 0,
+        status
+      })
       if (status === kakaoRef.current.maps.services.Status.OK) {
         setResults(data.slice(0, 6))
         setSelectedPlace(null)
@@ -1453,6 +1513,13 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       setPlaces(prev => prev.map(place => place.id === optimisticId ? data : place).filter((place, index, array) => array.findIndex(item => item.id === place.id) === index))
       setFocusedPlaceId(data.id)
       focusPlace(data, { openDetail: false })
+      trackAnalyticsEvent('place_added', {
+        userId: authUser?.id || session.authId || null,
+        roomId: session.roomId,
+        place_id: data.id,
+        tag,
+        source: 'map_search'
+      })
     }
 
     await supabase.from('messages').insert({
