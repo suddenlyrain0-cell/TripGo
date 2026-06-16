@@ -199,11 +199,11 @@ body.resizingChat .room{transition:none}
 
 .mapArea{position:relative;min-width:0;background:#eef0f4}
 .map{width:100%;height:100%}
-.selectedMapPin,.routeMapPin{position:relative;width:46px;height:46px;border-radius:50%;background:transparent;box-shadow:none;border:0;padding:0;appearance:none}
+.selectedMapPin,.routeMapPin{position:relative;width:54px;height:54px;border-radius:50%;background:transparent;box-shadow:none;border:0;padding:0;appearance:none}
 .selectedMapPin span,.routeMapPin span{position:absolute;inset:0;display:grid;place-items:center}
 .selectedMapPin img,.routeMapPin img{width:100%;height:100%;display:block;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(0,0,0,.22))}
-.selectedMapPin:after,.routeMapPin:after{content:"";position:absolute;left:50%;top:50%;width:58px;height:58px;border-radius:50%;background:color-mix(in srgb,var(--route-color,#0a84ff) 22%,transparent);transform:translate(-50%,-50%);z-index:-1;animation:pinPulse 1.6s ease-out infinite}
-.routeMapPin{width:38px;height:38px}
+.selectedMapPin:after,.routeMapPin:after{content:"";position:absolute;left:50%;top:50%;width:68px;height:68px;border-radius:50%;background:color-mix(in srgb,var(--route-color,#0a84ff) 22%,transparent);transform:translate(-50%,-50%);z-index:-1;animation:pinPulse 1.6s ease-out infinite}
+.routeMapPin{width:46px;height:46px}
 .routeMapPin span{inset:0}
 .routeMapPin:after{display:none}
 @keyframes pinPulse{0%{opacity:.8;transform:translate(-50%,-50%) scale(.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35)}}
@@ -220,7 +220,11 @@ body.resizingChat .room{transition:none}
 .locateButton:hover{background:#fff;transform:translateY(-1px)}
 .locateButton:disabled{opacity:.62;cursor:default;transform:none}
 .locationNotice,.placeNotice{position:absolute;z-index:6;right:24px;bottom:82px;max-width:280px;padding:12px 14px;border-radius:16px;background:rgba(30,30,32,.86);color:#fff;font-weight:750;font-size:14px;box-shadow:0 14px 40px rgba(0,0,0,.2);backdrop-filter:blur(20px)}
-.placeNotice{left:50%;right:auto;bottom:92px;transform:translateX(-50%);background:rgba(255,255,255,.86);color:#1d1d1f;border:1px solid rgba(0,0,0,.08)}
+.placeNotice{left:50%;right:auto;bottom:92px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:9px;background:rgba(255,255,255,.86);color:#1d1d1f;border:1px solid rgba(0,0,0,.08)}
+.placeNotice b{font-weight:850}
+.placeNotice.success{background:rgba(255,255,255,.72);border-color:rgba(255,255,255,.86);box-shadow:0 18px 42px rgba(52,199,89,.16),inset 0 1px 0 rgba(255,255,255,.86);backdrop-filter:blur(28px) saturate(1.35)}
+.placeNoticeLogo{width:28px;height:28px;display:grid;place-items:center;animation:placeLogoPop .72s cubic-bezier(.2,1.35,.34,1) both}
+@keyframes placeLogoPop{0%{opacity:0;transform:scale(.42,.28) translateY(8px)}42%{opacity:1;transform:scale(1.22,.82) translateY(-2px)}68%{transform:scale(.9,1.12) translateY(0)}100%{opacity:1;transform:scale(1)}}
 .results,.addPanel,.placeDetailPanel{position:absolute;z-index:5;background:rgba(255,255,255,.58);border:1px solid rgba(255,255,255,.78);border-radius:18px;box-shadow:0 18px 46px rgba(0,0,0,.13);backdrop-filter:blur(34px) saturate(1.45)}
 .results{position:static;width:100%;margin-top:10px;padding:8px}
 .addPanel,.placeDetailPanel{width:min(640px,calc(100% - 48px))}
@@ -240,9 +244,9 @@ body.resizingChat .room{transition:none}
 .addPanelHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .addPanelHead b{display:block;font-size:22px;line-height:1.15}
 .addPanelHead span{display:block;margin-top:4px;color:#6e6e73;font-size:13px}
-.tagPills{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:5px;background:rgba(118,118,128,.16);border-radius:17px}
+.tagPills{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;padding:5px;background:linear-gradient(135deg,rgba(255,255,255,.34),rgba(118,118,128,.14));border:1px solid rgba(255,255,255,.5);border-radius:17px;box-shadow:inset 0 1px 0 rgba(255,255,255,.58),inset 0 0 0 1px rgba(255,255,255,.08),0 12px 26px rgba(0,0,0,.07);backdrop-filter:blur(22px) saturate(1.3)}
 .tagPills button{height:40px;border-radius:13px;background:transparent;color:#3a3a3c;font-weight:850}
-.tagPills button.active{background:#fff;color:#0a84ff;box-shadow:0 5px 16px rgba(0,0,0,.12)}
+.tagPills button.active{background:linear-gradient(135deg,rgba(255,255,255,.94),rgba(255,255,255,.66));color:#0a84ff;border:1px solid rgba(255,255,255,.74);box-shadow:inset 0 1px 0 rgba(255,255,255,.88),inset 0 0 0 1px rgba(255,255,255,.14),0 8px 18px rgba(0,0,0,.1);backdrop-filter:blur(18px) saturate(1.25)}
 .addPanel input{height:52px;background:rgba(255,255,255,.5);border-color:rgba(0,0,0,.08);font-size:16px}
 .addPanel>button:last-child{height:54px;border-radius:17px;background:#0a84ff;color:#fff;font-size:18px;font-weight:850;display:flex;align-items:center;justify-content:center;gap:8px}
 .placeDetailPanel{max-height:min(560px,calc(100% - 120px));overflow:auto}
@@ -430,6 +434,9 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mobile-chat .side footer input{height:40px}
   .mobile-chat .roundButton{width:40px;height:40px}
   .mobile-map .side,.mobile-map .roomList{display:none}
+  .selectedMapPin,.routeMapPin{width:46px;height:46px}
+  .selectedMapPin:after,.routeMapPin:after{width:58px;height:58px}
+  .routeMapPin{width:38px;height:38px}
   .mapSearch{top:118px;left:12px;width:calc(100% - 24px)}
   .mobile-map .mapSearch{display:none}
   .chatCollapsed .mapSearch{left:12px;width:calc(100% - 24px);transform:none}

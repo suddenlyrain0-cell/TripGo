@@ -4,7 +4,7 @@ import { ArrowLeft, Crown, Link2, LocateFixed, LogOut, MapPin, Megaphone, Messag
 import { isSupabaseConfigured, supabase } from './supabase'
 import './style.css'
 
-const TAGS = ['관광', '식당', '숙소', '카페', '기타']
+const TAGS = ['관광', '식당', '숙소', '카페', '교통', '기타']
 const MAX_NAME_LENGTH = 10
 const MIN_LOADING_MS = 700
 const AUTH_STORAGE_KEY = 'trip_auth_user'
@@ -1232,6 +1232,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       if (status === kakaoRef.current.maps.services.Status.OK) {
         setResults(data.slice(0, 6))
         setSelectedPlace(null)
+        setSelectedSavedPlace(null)
         setSearch(trimmed)
         rememberSearchTerm(trimmed)
         const first = data[0]
@@ -1246,6 +1247,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
 
   function selectSearchResult(place) {
     setSelectedPlace(place)
+    setSelectedSavedPlace(null)
     setResults([])
     setSearch(place.place_name)
     setSearchFocused(false)
@@ -1413,7 +1415,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       type: 'system',
       content: `${session.username}님이 [${tag}] ${placeToSave.place_name} 장소를 추가했어요.`
     })
-    setPlaceNotice(`${placeToSave.place_name}을 지도에 추가했어요.`)
+    setPlaceNotice('위치 추가 성공!')
     setTimeout(() => setPlaceNotice(''), 2400)
   }
 
@@ -1905,7 +1907,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         <div className="searchBox">
           <Search size={20} />
           <input placeholder="장소 검색 예: 오사카 맛집" value={search} onFocus={handleSearchFocus} onBlur={handleSearchBlur} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && searchPlaces()} />
-          {search && <button className="clearSearch" onClick={() => { setSearch(''); setResults([]); setSelectedPlace(null); setSearchFocused(true) }} title="검색어 지우기"><X size={18} /></button>}
+          {search && <button className="clearSearch" onClick={() => { setSearch(''); setResults([]); setSelectedPlace(null); setSelectedSavedPlace(null); setSearchFocused(true) }} title="검색어 지우기"><X size={18} /></button>}
           <button onClick={() => openMobileSearch() || searchPlaces()}>검색</button>
         </div>
         {results.length > 0 && <div className="results">
@@ -1951,7 +1953,10 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         <span>{locating ? '찾는 중' : '내 위치'}</span>
       </button>
       {locationNotice && <div className="locationNotice">{locationNotice}</div>}
-      {placeNotice && <div className="placeNotice">{placeNotice}</div>}
+      {placeNotice && <div className={placeNotice === '위치 추가 성공!' ? 'placeNotice success' : 'placeNotice'}>
+        {placeNotice === '위치 추가 성공!' && <span className="placeNoticeLogo"><LogoMark /></span>}
+        <b>{placeNotice}</b>
+      </div>}
       {selectedPlace && <div className="addPanel">
         <div className="sheetHandle" />
         <div className="addPanelHead">
