@@ -327,7 +327,7 @@ function Landing({ onStart }) {
           <span>어디가 · 여행 지도 방</span>
         </div>
         <h1>여행 장소를<br />같이 모으세요.</h1>
-        <p>친구들과 함께 여행 장소를 지도에 모으고, 실시간으로 공유하는 협업 여행 계획 서비스입니다.</p>
+        <p>친구와 함께 만들고 공유하는 실시간 여행 계획 서비스입니다.</p>
         <div className="heroActions">
           <button className="heroPrimary" onClick={onStart}>시작하기</button>
           <a href="#flow">작동 방식 보기</a>
@@ -571,7 +571,7 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
         </> : <button className="loginButton" onClick={onRequireAuth}>Log In</button>}
       </div>
       <h1>어디가</h1>
-      <p>친구들과 함께 여행 장소를 지도에 모으고, 실시간으로 공유하는 협업 여행 계획 서비스</p>
+      <p>친구와 함께 만들고 공유하는 실시간 여행 계획 서비스</p>
       <div className="tabs" role="tablist">
         <button className={mode === 'find' ? 'active' : ''} onClick={() => { setMode('find'); setError('') }}>방 찾기</button>
         <button className={mode === 'create' ? 'active' : ''} disabled={isGuest} onClick={() => { setMode('create'); setError('') }}>방 만들기</button>
