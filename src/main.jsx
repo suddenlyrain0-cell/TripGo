@@ -999,7 +999,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   function submitMobileSearch() {
     const keyword = mobileSearchInput.trim()
     if (!keyword) return
-    searchPlaces(keyword, { closeMobile: true })
+    searchPlaces(keyword)
   }
 
   function moveToCurrentLocation(options = {}) {
@@ -1259,13 +1259,21 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const isOwner = ownerName === session.username
 
   function renderPlaceStories() {
-    return places.length > 0 ? <div className="placeStoryScroller">
-      {places.map(p => <button key={p.id} className={focusedPlaceId === p.id ? 'placeStory active' : 'placeStory'} onClick={() => { focusPlace(p); setMobileView('map') }} title={`${p.name} 위치로 이동`}>
+    return <>
+      <div className="placeStoryScroller">
+        <button className="placeStory addPlaceStory" onClick={openMobileSearch} title="장소 추가">
+          <span className="placeStoryRing"><Plus size={26} /></span>
+          <strong>장소 추가</strong>
+          <small>검색</small>
+        </button>
+        {places.map(p => <button key={p.id} className={focusedPlaceId === p.id ? 'placeStory active' : 'placeStory'} onClick={() => { focusPlace(p); setMobileView('map') }} title={`${p.name} 위치로 이동`}>
         <span className="placeStoryRing"><MapPin size={22} /></span>
         <strong>{p.name}</strong>
         <small>#{p.tag}</small>
-      </button>)}
-    </div> : <p className="emptyState">아직 추가된 장소가 없어요.</p>
+        </button>)}
+      </div>
+      {places.length === 0 && <p className="emptyState">아직 추가된 장소가 없어요.</p>}
+    </>
   }
 
   return <div ref={roomLayoutRef} className={`${chatOpen ? 'room' : 'room chatCollapsed'} mobile-${mobileView}`} style={{ '--chat-width': `${chatWidth}px` }}>
@@ -1297,13 +1305,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       <section className="mobileMapTop">
         <header className="sideHeader">
           <div>
-            <h2>{session.roomName}{isOwner && <Crown className="ownerTitleIcon" size={15} />}</h2>
-            <p>{members.length}명 · 저장된 장소 {places.length}곳</p>
-          </div>
-          <div className="toolbarActions">
-            <button className="iconButton" onClick={() => setMembersOpen(true)} title="함께 있는 사람"><Users size={21} /></button>
-            {isOwner && <button className="iconButton danger" onClick={() => setDeleteConfirmOpen(true)} title="방 삭제"><Trash2 size={21} /></button>}
-            <button className="iconButton danger" onClick={() => setLeaveConfirmOpen(true)} title="나가기"><LogOut size={21} /></button>
+            <h2><span className="mobileBrandMark"><MapPin size={17} /></span>어디가</h2>
           </div>
         </header>
         <section className="places">
@@ -1336,7 +1338,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           {mobileSearchInput.trim().length < 2 && recentSearches.length > 0 && <>
             <b>최근 검색</b>
             <div className="recentSearches">
-              {recentSearches.map(term => <button key={term} onClick={() => { setMobileSearchInput(term); searchPlaces(term, { closeMobile: true }) }}>{term}</button>)}
+              {recentSearches.map(term => <button key={term} onClick={() => { setMobileSearchInput(term); searchPlaces(term) }}>{term}</button>)}
             </div>
           </>}
           {mobileSearchInput.trim().length >= 2 && <div className="mobileSearchResults">

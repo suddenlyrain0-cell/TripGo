@@ -257,6 +257,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .placeStoryScroller{display:flex;gap:12px;margin-top:12px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .placeStoryScroller::-webkit-scrollbar{height:0}
 .placeStory{flex:0 0 72px;display:grid;justify-items:center;gap:5px;text-align:center;background:transparent;color:#1d1d1f;padding:0;border-radius:18px;scroll-snap-align:start}
+.addPlaceStory{display:none}
 .placeStory:hover .placeStoryRing{transform:translateY(-1px);box-shadow:0 12px 28px rgba(10,132,255,.22)}
 .placeStory.active .placeStoryRing{background:#fff;border-color:#0a84ff;box-shadow:0 12px 30px rgba(10,132,255,.24)}
 .placeStory.active strong{color:#0a84ff}
@@ -326,14 +327,18 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mapArea{grid-column:1;grid-row:1;height:100dvh}
   .map{height:100%}
   .mobileMapTop{display:block;position:absolute;z-index:6;top:0;left:0;right:0;background:rgba(255,255,255,.62);border-bottom:1px solid rgba(255,255,255,.72);box-shadow:0 12px 34px rgba(0,0,0,.08);backdrop-filter:blur(30px) saturate(1.35)}
-  .mobileMapTop .sideHeader{min-height:72px;padding:11px 16px;background:transparent}
-  .mobile-map .mobileMapTop .sideHeader{display:none}
+  .mobileMapTop .sideHeader{min-height:58px;padding:10px 16px;background:transparent}
   .mobileMapTop .sideHeader h2{font-size:22px;white-space:normal;line-height:1.05}
+  .mobileMapTop .sideHeader h2{display:flex;align-items:center;gap:9px}
+  .mobileBrandMark{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:#0a84ff;color:#fff;box-shadow:0 8px 18px rgba(10,132,255,.24)}
   .mobileMapTop .sideHeader p{font-size:13px}
-  .mobileMapTop .places{padding:0 16px 10px;border-bottom:0}
+  .mobileMapTop .places{padding:0 16px 9px;border-bottom:0}
   .mobileMapTop .places>b{display:none}
   .mobileMapTop .placeStoryScroller{margin-top:0;padding-bottom:6px}
   .mobileMapTop .placeStory{flex-basis:72px}
+  .mobileMapTop .addPlaceStory{display:grid}
+  .mobileMapTop .addPlaceStory .placeStoryRing{background:#1d1d1f;border-color:#1d1d1f;color:#fff}
+  .mobileMapTop .emptyState{display:none}
   .roomList{display:none;position:absolute;z-index:12;inset:0;width:auto;height:auto;border-radius:0;padding:18px;background:rgba(242,242,247,.92)}
   .mobile-rooms .roomList{display:grid}
   .mobile-rooms .brandLockup b,.mobile-rooms .roomListLabel,.mobile-rooms .roomItem span:not(.roomAvatar){display:block}
@@ -360,6 +365,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mobile-chat .roundButton{width:40px;height:40px}
   .mobile-map .side,.mobile-map .roomList{display:none}
   .mapSearch{top:118px;left:12px;width:calc(100% - 24px)}
+  .mobile-map .mapSearch{display:none}
   .chatCollapsed .mapSearch{left:12px;width:calc(100% - 24px);transform:none}
   .searchBox{border-radius:18px;padding:7px 7px 7px 12px}
   .searchBox button{height:40px;padding:0 14px}
