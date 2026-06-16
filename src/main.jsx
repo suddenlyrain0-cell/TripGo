@@ -1747,11 +1747,12 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           <b>추가된 장소</b>
           {renderPlaceStories()}
         </section>
-        <div className="inviteStrip">
-          <button onClick={copyInviteLink}><Link2 size={17} /> 초대하기</button>
-          {inviteNotice && <span>{inviteNotice}</span>}
-        </div>
-        <section className="chat" ref={chatRef}>{messages.length > 0 ? messages.map(m => {
+        <div className="chatStack">
+          <div className="inviteStrip">
+            <button onClick={copyInviteLink}><Link2 size={17} /> 초대하기</button>
+            {inviteNotice && <span>{inviteNotice}</span>}
+          </div>
+          <section className="chat" ref={chatRef}>{messages.length > 0 ? messages.map(m => {
           const placeMessage = m.type === 'place_comment' ? parsePlaceMessage(m) : null
           if (placeMessage) {
             return <div key={m.id} className="system msg placeMessage">
@@ -1762,6 +1763,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           }
           return <div key={m.id} className={m.type === 'system' ? 'system msg' : 'msg'}><b>{m.username}</b><p>{m.content}</p></div>
         }) : <div className="emptyChat">아직 채팅이 없어요.</div>}</section>
+        </div>
         <footer><button className="roundButton" title="이미지"><Image size={21} /></button><input placeholder="메시지 입력..." value={chat} onChange={e => setChat(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} /><button className="roundButton send" onClick={sendMessage} title="전송"><Send size={20} /></button></footer>
       </> : <div className="chatRail">
         <button className="railButton" onClick={() => setChatOpen(true)} title="채팅 펼치기">

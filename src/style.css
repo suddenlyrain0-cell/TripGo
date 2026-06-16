@@ -254,7 +254,7 @@ body.resizingChat .room{transition:none}
 .placeCommentForm input{height:42px;background:rgba(255,255,255,.58);border-color:rgba(0,0,0,.08)}
 .placeCommentForm button{height:42px;border-radius:14px;background:#0a84ff;color:#fff;font-weight:850}
 
-.side{container-type:inline-size;position:relative;min-width:0;background:rgba(255,255,255,.7);border-left:1px solid rgba(0,0,0,.1);display:grid;grid-template-rows:auto 150px auto minmax(0,1fr) auto;height:100vh;backdrop-filter:blur(28px) saturate(1.3)}
+.side{container-type:inline-size;position:relative;min-width:0;background:rgba(255,255,255,.7);border-left:1px solid rgba(0,0,0,.1);display:grid;grid-template-rows:auto 150px minmax(0,1fr) auto;height:100vh;backdrop-filter:blur(28px) saturate(1.3)}
 .chatResizeHandle{position:absolute;z-index:8;left:-4px;top:0;width:8px;height:100%;cursor:col-resize}
 .chatResizeHandle:after{content:"";position:absolute;left:3px;top:0;width:1px;height:100%;background:rgba(0,0,0,.08)}
 body.resizingChat{cursor:col-resize;user-select:none}
@@ -270,8 +270,9 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .sideHeader{padding-left:14px;padding-right:14px}
 }
 .places{min-height:0;padding:15px 18px 13px;border-bottom:1px solid rgba(0,0,0,.08);overflow:hidden}
-.inviteStrip{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:10px 14px 8px;background:rgba(250,250,250,.5)}
-.inviteStrip button{height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 14px;border-radius:18px;background:rgba(255,59,48,.13);color:#ff3b30;font-size:14px;font-weight:900;border:1px solid rgba(255,59,48,.2);box-shadow:0 10px 24px rgba(255,59,48,.08);backdrop-filter:blur(18px) saturate(1.25)}
+.chatStack{position:relative;min-height:0;overflow:hidden}
+.inviteStrip{position:absolute;z-index:4;top:10px;right:12px;display:flex;align-items:center;justify-content:flex-end;gap:8px;pointer-events:none}
+.inviteStrip button{height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 14px;border-radius:18px;background:rgba(255,59,48,.12);color:#ff3b30;font-size:14px;font-weight:900;border:1px solid rgba(255,59,48,.2);box-shadow:0 10px 24px rgba(255,59,48,.08);backdrop-filter:blur(18px) saturate(1.25);pointer-events:auto}
 .inviteStrip span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#ff3b30;font-size:12px;font-weight:820}
 .places b{font-size:15px}
 .placeStoryScroller{display:flex;gap:12px;margin-top:12px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
@@ -288,7 +289,7 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .placeStory small{width:72px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#8e8e93;font-size:10px;font-weight:800;line-height:1}
 .routeOrderBadge{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--route-color,#ff3b30);color:#fff;border:3px solid rgba(255,255,255,.96);box-shadow:0 8px 18px rgba(0,0,0,.2);font-size:14px;font-weight:950;padding:0;appearance:none}
 .emptyState{margin:18px 0 0;color:#8e8e93;font-size:14px;font-weight:750}
-.chat{overflow:auto;padding:20px 18px;background:rgba(250,250,250,.5)}
+.chat{height:100%;overflow:auto;padding:20px 18px;background:rgba(250,250,250,.5)}
 .emptyChat{height:100%;display:grid;place-items:center;color:#8e8e93;font-size:15px;font-weight:800;text-align:center}
 .msg{margin-bottom:13px}
 .msg b{display:block;margin:0 0 5px 8px;color:#7a7a80;font-size:13px;font-weight:800}
@@ -380,11 +381,11 @@ body.resizingChat{cursor:col-resize;user-select:none}
   .mobile-rooms .roomItem b{font-size:17px}
   .mobile-rooms .roomItem small{font-size:13px}
   .side{display:none;position:absolute;z-index:11;inset:0;width:auto;height:auto;border-radius:0;box-shadow:none;border-left:0}
-  .mobile-chat .side{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;bottom:calc(64px + env(safe-area-inset-bottom));height:auto}
+  .mobile-chat .side{display:grid;grid-template-rows:auto minmax(0,1fr) auto;bottom:calc(64px + env(safe-area-inset-bottom));height:auto}
   .mobile-chat .chatResizeHandle{display:none}
   .mobile-chat .chatCollapseButton{display:none}
   .mobile-chat .sideHeader{min-height:64px;padding:10px 16px}
-  .mobile-chat .inviteStrip{padding:8px 12px 0}
+  .mobile-chat .inviteStrip{top:8px;right:10px}
   .mobile-chat .side>.places{display:none}
   .mobile-chat .chat{padding:16px;background:rgba(250,250,250,.78)}
   .mobile-chat .side footer{grid-template-columns:40px minmax(0,1fr) 40px;gap:8px;padding:10px 12px 12px}
