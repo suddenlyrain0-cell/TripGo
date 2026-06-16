@@ -701,6 +701,17 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const mobileViewRef = useRef(mobileView)
   const resizingRef = useRef(false)
   const roomLayoutRef = useRef(null)
+  const locationNoticeTimerRef = useRef(null)
+
+  function showLocationNotice(message, duration = 3000) {
+    if (locationNoticeTimerRef.current) clearTimeout(locationNoticeTimerRef.current)
+    setLocationNotice(message)
+    if (!message) return
+    locationNoticeTimerRef.current = setTimeout(() => {
+      setLocationNotice('')
+      locationNoticeTimerRef.current = null
+    }, duration)
+  }
 
   function getStoredPlaceOrder() {
     const stored = safeParseJson(localStorage.getItem(PLACE_ORDER_STORAGE_KEY)) || {}
@@ -757,6 +768,10 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     mobileViewRef.current = mobileView
     if (mobileView === 'chat') setUnreadCount(0)
   }, [mobileView])
+
+  useEffect(() => () => {
+    if (locationNoticeTimerRef.current) clearTimeout(locationNoticeTimerRef.current)
+  }, [])
 
   useEffect(() => {
     if (!chatRef.current) return
@@ -1267,16 +1282,27 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     </div>
   }
 
-  function moveToCurrentLocation(options = {}) {
+  async function moveToCurrentLocation(options = {}) {
     const { silent = false } = options
-    if (!silent) setLocationNotice('')
+    if (!silent) showLocationNotice('')
     if (!navigator.geolocation) {
-      if (!silent) setLocationNotice('이 브라우저에서는 현재 위치를 사용할 수 없어요.')
+      if (!silent) showLocationNotice('이 브라우저에서는 현재 위치를 사용할 수 없어요.')
       return
     }
     if (!kakaoRef.current || !mapObj.current) {
-      if (!silent) setLocationNotice('지도가 준비된 뒤 다시 눌러주세요.')
+      if (!silent) showLocationNotice('지도가 준비된 뒤 다시 눌러주세요.')
       return
+    }
+    if (!silent && navigator.permissions?.query) {
+      try {
+        const permission = await navigator.permissions.query({ name: 'geolocation' })
+        if (permission.state === 'denied') {
+          showLocationNotice('브라우저 설정에서 위치 권한을 허용해주세요.', 4000)
+          return
+        }
+      } catch {
+        // Fall through to geolocation; some browsers do not support querying this permission.
+      }
     }
     setLocating(true)
     navigator.geolocation.getCurrentPosition(position => {
@@ -1287,13 +1313,13 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       mapObj.current.setLevel(4)
       if (currentMarkerRef.current) currentMarkerRef.current.setMap(null)
       currentMarkerRef.current = new kakaoRef.current.maps.Marker({ position: next, map: mapObj.current })
-      if (!silent) setLocationNotice('현재 위치로 이동했어요.')
+      if (!silent) showLocationNotice('현재 위치로 이동했어요.')
       setLocating(false)
     }, error => {
       const message = error.code === error.PERMISSION_DENIED
-        ? '브라우저 위치 권한을 허용해야 해요.'
+        ? '브라우저 설정에서 위치 권한을 허용해주세요.'
         : '현재 위치를 찾지 못했어요. 잠시 후 다시 시도해주세요.'
-      if (!silent) setLocationNotice(message)
+      if (!silent) showLocationNotice(message, error.code === error.PERMISSION_DENIED ? 4000 : 3000)
       setLocating(false)
     }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 })
   }
@@ -1371,7 +1397,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
 
     if (error) {
       setPlaces(prev => prev.filter(place => place.id !== optimisticId))
-      setLocationNotice('장소를 추가하지 못했어요. 잠시 후 다시 시도해주세요.')
+      showLocationNotice('장소를 추가하지 못했어요. 잠시 후 다시 시도해주세요.')
       return
     }
 
@@ -1403,7 +1429,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     }).select().single()
 
     if (error) {
-      setLocationNotice('댓글을 저장하지 못했어요. 댓글 테이블 설정을 확인해주세요.')
+      showLocationNotice('댓글을 저장하지 못했어요. 댓글 테이블 설정을 확인해주세요.')
       return
     }
 
@@ -1459,7 +1485,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         .eq('id', session.roomId)
 
       if (error) {
-        setLocationNotice('공지를 저장하지 못했어요. Supabase rooms 공지 컬럼을 확인해주세요.')
+        showLocationNotice('공지를 저장하지 못했어요. Supabase rooms 공지 컬럼을 확인해주세요.')
       }
       return
     }
@@ -1482,7 +1508,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
 
     if (error) {
       setMessages(prev => prev.filter(message => message.id !== optimisticId))
-      setLocationNotice('메시지를 보내지 못했어요. 잠시 후 다시 시도해주세요.')
+      showLocationNotice('메시지를 보내지 못했어요. 잠시 후 다시 시도해주세요.')
       return
     }
 
@@ -1507,7 +1533,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
 
     if (error || !data?.length) {
       setDeleteConfirmOpen(false)
-      setLocationNotice('방을 삭제하지 못했어요. Supabase의 rooms 삭제 정책을 확인해주세요.')
+      showLocationNotice('방을 삭제하지 못했어요. Supabase의 rooms 삭제 정책을 확인해주세요.')
       return
     }
 
