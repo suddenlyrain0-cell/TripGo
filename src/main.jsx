@@ -121,6 +121,17 @@ function normalizeDisplayName(value, fallback) {
   return (compact || fallback).slice(0, MAX_NAME_LENGTH)
 }
 
+function generateRandomRoomUsername() {
+  return `여행자${Math.floor(1000 + Math.random() * 9000)}`
+}
+
+function clearInviteRoomParam() {
+  const url = new URL(window.location.href)
+  if (!url.searchParams.has('room')) return
+  url.searchParams.delete('room')
+  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+}
+
 function getRouteColor(index) {
   return ROUTE_COLORS[index % ROUTE_COLORS.length]
 }
@@ -175,11 +186,13 @@ function loadKakaoMap() {
 }
 
 function App() {
+  const inviteRoomId = new URLSearchParams(window.location.search).get('room')
   const savedSession = safeParseJson(localStorage.getItem(ROOM_SESSION_STORAGE_KEY))
+  const initialSession = inviteRoomId ? null : savedSession
   const savedAuthUser = safeParseJson(localStorage.getItem(AUTH_STORAGE_KEY))
   const [authUser, setAuthUser] = useState(savedAuthUser)
   const [authLoading, setAuthLoading] = useState(true)
-  const [session, setSession] = useState(savedSession)
+  const [session, setSession] = useState(initialSession)
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const showLanding = window.location.pathname === '/landing' || new URLSearchParams(window.location.search).get('landing') === '1'
   const [landingOpen, setLandingOpen] = useState(() => showLanding && sessionStorage.getItem('trip_room_landing_seen') !== 'true')
@@ -538,6 +551,10 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
       setInviteRoom(data)
       setRoomQuery(data.name)
       setSelectedRoom(data)
+      setForm(prev => ({
+        ...prev,
+        username: prev.username.trim() || authUser?.displayName || generateRandomRoomUsername()
+      }))
     } else {
       setError('초대받은 방을 찾지 못했어요.')
     }
@@ -577,6 +594,36 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
     } catch (error) {
       setError(error.message || '입장 중 문제가 발생했습니다.')
       setLoading(false)
+    }
+  }
+
+  async function enterInviteRoom(room) {
+    const username = form.username.trim()
+    setError('')
+    const usernameError = validateDisplayName(username, '사용자 이름')
+    if (usernameError) {
+      setError(usernameError)
+      return false
+    }
+    setLoading(true)
+    try {
+      await withMinimumLoading(() => supabase.from('room_members').upsert({ room_id: room.id, username }, { onConflict: 'room_id,username' }))
+      const next = {
+        roomId: room.id,
+        roomName: room.name,
+        username,
+        authId: authUser?.id || null,
+        provider: authUser?.provider || 'guest',
+        isGuest: !authUser || isGuest
+      }
+      localStorage.setItem(ROOM_SESSION_STORAGE_KEY, JSON.stringify(next))
+      clearInviteRoomParam()
+      setSession(next)
+      return true
+    } catch (error) {
+      setError(error.message || '초대받은 방에 입장하지 못했어요.')
+      setLoading(false)
+      return false
     }
   }
 
@@ -642,18 +689,17 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
             </div>
           </div> : <button className="loginButton" onClick={onRequireAuth}>로그인</button>}
         </div>
-        {inviteLoading
-          ? <div className="inviteLoading"><div className="spinner" /><b>초대받은 방을 확인 중...</b></div>
+        {inviteLoading || loading
+          ? <div className="inviteLoading"><div className="spinner" /><b>{inviteRoom ? `${inviteRoom.name} 방에 입장 중...` : '초대받은 방을 확인 중...'}</b></div>
           : <>
             <h1>{inviteRoom.name}</h1>
-            <p>{inviteRoom.name} 방에 입장할까요?</p>
+            <p>이름만 입력하면 바로 입장할 수 있어요.</p>
             <div className="formStack inviteForm">
               <label><span>닉네임</span><input maxLength={MAX_NAME_LENGTH} placeholder="사용자 이름" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} /></label>
-              <label><span>비밀번호</span><input placeholder="방 비밀번호" type="password" inputMode="numeric" pattern="[0-9]*" value={form.password} onChange={e => setForm({ ...form, password: sanitizeRoomPassword(e.target.value) })} /></label>
             </div>
             {error && <div className="error">{error}</div>}
             <div className="inviteActions">
-              <button className="primary" disabled={loading} onClick={() => enterRoom(inviteRoom)}>{loading ? '입장 중...' : '입장하기'}</button>
+              <button className="primary" onClick={() => enterInviteRoom(inviteRoom)}>입장하기</button>
               <button className="inviteSecondary" onClick={closeInviteRoom}>다른 방 찾기</button>
             </div>
           </>}
@@ -710,8 +756,8 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
 
 function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const isGuest = authUser ? authUser.isGuest : session.isGuest
-  const profileName = authUser?.displayName || session.username
-  const profileProvider = authUser?.provider || session.provider || 'guest'
+  const profileName = session.username || authUser?.displayName
+  const profileProvider = session.provider || authUser?.provider || 'guest'
   const [messages, setMessages] = useState([])
   const [messageReactions, setMessageReactions] = useState([])
   const [members, setMembers] = useState([])
