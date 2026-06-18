@@ -923,6 +923,41 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     }
   }
 
+  function createMapPointPlace(latLng, addressInfo = {}) {
+    const lat = latLng.getLat()
+    const lng = latLng.getLng()
+    const roadAddress = addressInfo.road_address?.address_name || ''
+    const address = addressInfo.address?.address_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+    return {
+      id: `map-click-${Date.now()}`,
+      place_name: '지도에서 선택한 위치',
+      road_address_name: roadAddress,
+      address_name: address,
+      x: String(lng),
+      y: String(lat)
+    }
+  }
+
+  function selectMapPoint(latLng) {
+    if (!latLng) return
+    setResults([])
+    setSearchFocused(false)
+    setSelectedSavedPlace(null)
+    setSelectedPlace(createMapPointPlace(latLng))
+
+    const geocoder = kakaoRef.current?.maps?.services ? new kakaoRef.current.maps.services.Geocoder() : null
+    if (!geocoder) return
+
+    geocoder.coord2Address(latLng.getLng(), latLng.getLat(), (result, status) => {
+      if (status !== kakaoRef.current.maps.services.Status.OK || !result?.[0]) return
+      const nextPlace = createMapPointPlace(latLng, result[0])
+      setSelectedPlace(prev => {
+        if (!prev || prev.x !== nextPlace.x || prev.y !== nextPlace.y) return prev
+        return nextPlace
+      })
+    })
+  }
+
   useEffect(() => {
     chatOpenRef.current = chatOpen
     if (chatOpen) setUnreadCount(0)
@@ -1054,10 +1089,8 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       kakaoRef.current = kakao
       mapObj.current = new kakao.maps.Map(mapRef.current, { center: new kakao.maps.LatLng(37.5665, 126.9780), level: 5 })
       setMapLevel(mapObj.current.getLevel())
-      kakao.maps.event.addListener(mapObj.current, 'click', () => {
-        setResults([])
-        setSelectedPlace(null)
-        setSelectedSavedPlace(null)
+      kakao.maps.event.addListener(mapObj.current, 'click', event => {
+        selectMapPoint(event.latLng)
       })
       kakao.maps.event.addListener(mapObj.current, 'dragstart', () => setResults([]))
       kakao.maps.event.addListener(mapObj.current, 'zoom_changed', () => {
