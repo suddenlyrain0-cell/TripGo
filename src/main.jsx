@@ -768,6 +768,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const currentMarkerRef = useRef(null)
   const kakaoRef = useRef(null)
   const chatRef = useRef(null)
+  const searchInputRef = useRef(null)
   const placeDragRef = useRef({ timer: null, id: null, active: false, targetId: null })
   const messagePressRef = useRef({ timer: null, active: false })
   const suppressStoryClickRef = useRef(false)
@@ -1388,6 +1389,14 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     setSelectedSavedPlace(null)
     setMobileSearchOpen(true)
     return true
+  }
+
+  function openPlaceSearch() {
+    if (openMobileSearch()) return
+    setSearchFocused(true)
+    setSelectedPlace(null)
+    setSelectedSavedPlace(null)
+    requestAnimationFrame(() => searchInputRef.current?.focus())
   }
 
   function handleSearchFocus() {
@@ -2048,7 +2057,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   function renderPlaceStories() {
     return <>
       <div className="placeStoryScroller">
-        <button className="placeStory addPlaceStory" onClick={openMobileSearch} title="장소 추가">
+        <button className="placeStory addPlaceStory" onClick={openPlaceSearch} title="장소 추가">
           <span className="placeStoryRing"><Plus size={26} /></span>
           <strong>장소 추가</strong>
           <small>검색</small>
@@ -2122,7 +2131,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       <div className="mapSearch">
         <div className="searchBox">
           <Search size={20} />
-          <input placeholder="장소 검색 예: 오사카 맛집" value={search} onFocus={handleSearchFocus} onBlur={handleSearchBlur} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && searchPlaces()} />
+          <input ref={searchInputRef} placeholder="장소 검색 예: 오사카 맛집" value={search} onFocus={handleSearchFocus} onBlur={handleSearchBlur} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && searchPlaces()} />
           {search && <button className="clearSearch" onClick={() => { setSearch(''); setResults([]); setSelectedPlace(null); setSelectedSavedPlace(null); setSearchFocused(true) }} title="검색어 지우기"><X size={18} /></button>}
           <button onClick={() => openMobileSearch() || searchPlaces()}>검색</button>
         </div>
