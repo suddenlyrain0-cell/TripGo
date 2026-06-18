@@ -2587,14 +2587,6 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             <span>여행 일수</span>
             <input type="number" min="1" max="14" value={plannerSettings.days} onChange={event => setPlannerSettings(prev => ({ ...prev, days: event.target.value }))} />
           </label>
-          <label>
-            <span>시작</span>
-            <input type="time" value={plannerSettings.startTime} onChange={event => setPlannerSettings(prev => ({ ...prev, startTime: event.target.value }))} />
-          </label>
-          <label>
-            <span>종료</span>
-            <input type="time" value={plannerSettings.endTime} onChange={event => setPlannerSettings(prev => ({ ...prev, endTime: event.target.value }))} />
-          </label>
           <div className="plannerIntensity">
             {Object.entries(TRIP_INTENSITY_PROFILES).map(([key, profile]) => (
               <button key={key} className={plannerSettings.intensity === key ? 'active' : ''} onClick={() => setPlannerSettings(prev => ({ ...prev, intensity: key }))}>
