@@ -36,7 +36,11 @@ const POPULAR_TRAVEL_PLACES = [
   { name: '전주한옥마을', area: '전북 전주시' },
   { name: '강릉 안목해변', area: '강원 강릉시' }
 ]
-const KAKAO_PLACE_CATEGORY_GROUPS = ['SC4', 'AC5', 'PS3', 'CT1', 'AT4', 'AD5', 'FD6', 'CE7', 'MT1', 'CS2', 'PK6', 'OL7', 'SW8', 'BK9', 'AG2', 'PO3', 'HP8', 'PM9']
+const KAKAO_PLACE_CATEGORY_GROUPS_BY_ZOOM = {
+  wide: ['SC4', 'AC5', 'CT1', 'AT4'],
+  medium: ['SC4', 'AC5', 'PS3', 'CT1', 'AT4', 'AD5'],
+  close: ['SC4', 'AC5', 'PS3', 'CT1', 'AT4', 'AD5', 'FD6', 'CE7']
+}
 const BLOCKED_WORDS = ['시발', '씨발', '병신', '좆', '개새끼', 'fuck', 'shit']
 
 function safeParseJson(value) {
@@ -941,14 +945,25 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     }
   }
 
-  function findNearbyPlace(latLng, onFound) {
+  function getNearbyPlaceSearchOptions(level) {
+    if (level <= 3) {
+      return { categories: KAKAO_PLACE_CATEGORY_GROUPS_BY_ZOOM.close, radius: 45 }
+    }
+    if (level <= 6) {
+      return { categories: KAKAO_PLACE_CATEGORY_GROUPS_BY_ZOOM.medium, radius: 90 }
+    }
+    return { categories: KAKAO_PLACE_CATEGORY_GROUPS_BY_ZOOM.wide, radius: 220 }
+  }
+
+  function findNearbyPlace(latLng, level, onFound) {
     const services = kakaoRef.current?.maps?.services
     if (!services) return
+    const { categories, radius } = getNearbyPlaceSearchOptions(level)
     const placesService = new services.Places()
     const nearbyPlaces = []
-    let remaining = KAKAO_PLACE_CATEGORY_GROUPS.length
+    let remaining = categories.length
 
-    KAKAO_PLACE_CATEGORY_GROUPS.forEach(category => {
+    categories.forEach(category => {
       placesService.categorySearch(category, (data, status) => {
         if (status === services.Status.OK) nearbyPlaces.push(...data)
         remaining -= 1
@@ -958,7 +973,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         onFound(nearbyPlaces[0])
       }, {
         location: latLng,
-        radius: 90,
+        radius,
         sort: services.SortBy.DISTANCE
       })
     })
@@ -970,10 +985,11 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     setSearchFocused(false)
     setSelectedSavedPlace(null)
     setSelectedPlace(createMapPointPlace(latLng))
+    const currentLevel = mapObj.current?.getLevel?.() || mapLevel
 
     const geocoder = kakaoRef.current?.maps?.services ? new kakaoRef.current.maps.services.Geocoder() : null
     if (!geocoder) {
-      findNearbyPlace(latLng, nearbyPlace => {
+      findNearbyPlace(latLng, currentLevel, nearbyPlace => {
         const nextPlace = createMapPointPlace(latLng, {}, nearbyPlace)
         setSelectedPlace(prev => {
           if (!prev || prev.x !== nextPlace.x || prev.y !== nextPlace.y) return prev
@@ -985,7 +1001,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
 
     geocoder.coord2Address(latLng.getLng(), latLng.getLat(), (result, status) => {
       if (status !== kakaoRef.current.maps.services.Status.OK || !result?.[0]) {
-        findNearbyPlace(latLng, nearbyPlace => {
+        findNearbyPlace(latLng, currentLevel, nearbyPlace => {
           const nextPlace = createMapPointPlace(latLng, {}, nearbyPlace)
           setSelectedPlace(prev => {
             if (!prev || prev.x !== nextPlace.x || prev.y !== nextPlace.y) return prev
@@ -1001,7 +1017,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
       })
       if (result[0].road_address?.building_name) return
 
-      findNearbyPlace(latLng, nearbyPlace => {
+      findNearbyPlace(latLng, currentLevel, nearbyPlace => {
         const namedPlace = createMapPointPlace(latLng, result[0], nearbyPlace)
         setSelectedPlace(prev => {
           if (!prev || prev.x !== namedPlace.x || prev.y !== namedPlace.y) return prev
