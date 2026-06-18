@@ -26,7 +26,8 @@ export const TRIP_PLANNER_DEFAULT_SETTINGS = {
   endTime: '21:00',
   intensity: 'normal',
   travelStyle: 'normal',
-  transportMode: 'car'
+  transportMode: 'car',
+  preserveSavedOrder: false
 }
 
 export const TRIP_INTENSITY_PROFILES = {
@@ -189,6 +190,7 @@ function normalizeOptions(options = {}) {
     travelStyle,
     transportMode,
     startLocation: startPoint,
+    preserveSavedOrder: Boolean(options.preserveSavedOrder),
     maxDistanceKm: clampNumber(options.maxDistanceKm, 0.2, 30, DEFAULT_CLUSTER_DISTANCE_KM)
   }
 }
@@ -418,6 +420,40 @@ export function distributePlacesByDays(clusters = [], days = 1, travelStyle = 'n
   }
 }
 
+function distributeSequentialPlacesByDays(places = [], days = 1, travelStyle = 'normal') {
+  const profile = TRIP_INTENSITY_PROFILES[travelStyle] || TRIP_INTENSITY_PROFILES.normal
+  const sourcePlaces = Array.isArray(places) ? places : []
+  const dayCount = clampNumber(days, 1, 14, 1)
+  const dayPlaces = Array.from({ length: dayCount }, () => [])
+  const overflow = []
+  let dayIndex = 0
+
+  sourcePlaces.forEach(place => {
+    if (dayPlaces[dayIndex].length >= profile.targetPlaces && dayIndex < dayCount - 1) {
+      dayIndex += 1
+    }
+
+    if (dayPlaces[dayIndex].length < profile.maxPlaces) {
+      dayPlaces[dayIndex].push(place)
+      return
+    }
+
+    const fallbackDay = findAvailableDay(dayPlaces, dayIndex, profile.maxPlaces)
+    if (fallbackDay === -1) {
+      overflow.push(place)
+      return
+    }
+
+    dayPlaces[fallbackDay].push(place)
+    dayIndex = fallbackDay
+  })
+
+  return {
+    days: dayPlaces,
+    overflow
+  }
+}
+
 function findAvailableDay(dayPlaces, cursor, limit) {
   for (let offset = 0; offset < dayPlaces.length; offset += 1) {
     const index = (cursor + offset) % dayPlaces.length
@@ -480,7 +516,9 @@ export function buildDayRoute(places = [], day = 1, options = {}) {
   const safeOptions = normalizeOptions(options)
   const profile = TRIP_INTENSITY_PROFILES[safeOptions.travelStyle] || TRIP_INTENSITY_PROFILES.normal
   const { validPlaces } = validatePlaces(places)
-  const ordered = adjustByTravelContext(sortByNearestNeighbor(validPlaces, safeOptions.startLocation), safeOptions)
+  const ordered = safeOptions.preserveSavedOrder
+    ? validPlaces
+    : adjustByTravelContext(sortByNearestNeighbor(validPlaces, safeOptions.startLocation), safeOptions)
   const start = parseTimeToMinutes(safeOptions.startTime) ?? 9 * 60
   const rawEnd = parseTimeToMinutes(safeOptions.endTime) ?? 21 * 60
   const end = rawEnd <= start ? rawEnd + 24 * 60 : rawEnd
@@ -562,8 +600,9 @@ export function buildRoutePlan({ places = [], options = {} } = {}) {
   if (placeCount === 0) nextWarnings.push('저장한 장소가 없습니다.')
   if (placeCount > 0 && validPlaces.length === 0) nextWarnings.push('좌표가 있는 저장 장소가 없습니다.')
 
-  const clusters = clusterPlacesByDistance(validPlaces, safeOptions.maxDistanceKm)
-  const distributed = distributePlacesByDays(clusters, safeOptions.days, safeOptions.travelStyle)
+  const distributed = safeOptions.preserveSavedOrder
+    ? distributeSequentialPlacesByDays(validPlaces, safeOptions.days, safeOptions.travelStyle)
+    : distributePlacesByDays(clusterPlacesByDistance(validPlaces, safeOptions.maxDistanceKm), safeOptions.days, safeOptions.travelStyle)
   const dayRoutesWithOverflow = distributed.days.map((dayPlaces, index) => buildDayRoute(dayPlaces, index + 1, safeOptions))
   const scheduleOverflow = dayRoutesWithOverflow.flatMap(day => day.overflowPlaces || [])
   const scheduledIds = new Set(dayRoutesWithOverflow.flatMap(day => day.places.map(place => place.plannerId)))

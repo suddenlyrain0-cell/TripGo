@@ -877,7 +877,10 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
 
   const orderedPlaces = orderPlaces(places)
   const displayPlaces = dragPreviewPlaces || orderedPlaces
-  const tripPlan = useMemo(() => buildTripPlan(places, plannerSettings), [places, plannerSettings])
+  const tripPlan = useMemo(
+    () => buildTripPlan(orderedPlaces, { ...plannerSettings, preserveSavedOrder: true }),
+    [orderedPlaces, plannerSettings]
+  )
 
   function getPlaceRouteIndex(placeId) {
     return orderedPlaces.findIndex(place => place.id === placeId)

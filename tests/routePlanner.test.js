@@ -98,3 +98,18 @@ test('travelStyle changes how many places are packed into one day', () => {
   assert.ok(relaxed.days[0].places.length < packed.days[0].places.length)
   assert.equal(packed.days[0].places.length, 7)
 })
+
+test('preserveSavedOrder keeps the saved place order in the itinerary', () => {
+  const places = [
+    makePlace('third', 37.5685, 126.98),
+    makePlace('first', 37.5665, 126.978),
+    makePlace('second', 37.5675, 126.979)
+  ]
+
+  const plan = buildRoutePlan({
+    places,
+    options: { ...baseOptions, days: 1, travelStyle: 'packed', preserveSavedOrder: true }
+  })
+
+  assert.deepEqual(plan.days[0].places.map(place => place.id), ['third', 'first', 'second'])
+})
