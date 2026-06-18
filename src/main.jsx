@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ArrowLeft, CalendarDays, Crown, Link2, LocateFixed, LogOut, MapPin, Megaphone, MessageCircle, PanelRightClose, Plus, Search, Send, Trash2, UserMinus, Users, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './supabase'
-import { TRIP_INTENSITY_PROFILES, TRIP_PLANNER_DEFAULT_SETTINGS, buildTripPlan } from './routePlanner'
+import { TRIP_PLANNER_DEFAULT_SETTINGS, buildTripPlan } from './routePlanner'
 import './style.css'
 
 const TAGS = ['관광', '식당', '숙소', '카페', '교통', '기타']
@@ -878,7 +878,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const orderedPlaces = orderPlaces(places)
   const displayPlaces = dragPreviewPlaces || orderedPlaces
   const tripPlan = useMemo(
-    () => buildTripPlan(orderedPlaces, { ...plannerSettings, preserveSavedOrder: true }),
+    () => buildTripPlan(orderedPlaces, { ...plannerSettings, intensity: 'normal', travelStyle: 'normal', preserveSavedOrder: true }),
     [orderedPlaces, plannerSettings]
   )
 
@@ -2587,14 +2587,6 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             <span>여행 일수</span>
             <input type="number" min="1" max="14" value={plannerSettings.days} onChange={event => setPlannerSettings(prev => ({ ...prev, days: event.target.value }))} />
           </label>
-          <div className="plannerIntensity">
-            {Object.entries(TRIP_INTENSITY_PROFILES).map(([key, profile]) => (
-              <button key={key} className={plannerSettings.intensity === key ? 'active' : ''} onClick={() => setPlannerSettings(prev => ({ ...prev, intensity: key }))}>
-                <b>{profile.label}</b>
-                <span>{profile.minPlaces}-{profile.maxPlaces}곳</span>
-              </button>
-            ))}
-          </div>
         </div>
         {tripPlan.validPlaces.length === 0 ? <div className="plannerEmpty">좌표가 있는 저장 장소가 없어요.</div> : <div className="plannerDays">
           {tripPlan.days.map(day => <section key={day.day} className="plannerDay">
