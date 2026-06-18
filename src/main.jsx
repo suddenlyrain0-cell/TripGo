@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ArrowLeft, Crown, Link2, LocateFixed, LogOut, MapPin, Megaphone, MessageCircle, PanelRightClose, Plus, Search, Send, Trash2, UserMinus, Users, X } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Crown, Link2, LocateFixed, LogOut, MapPin, Megaphone, MessageCircle, PanelRightClose, Plus, Search, Send, Trash2, UserMinus, Users, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './supabase'
 import './style.css'
 
@@ -41,6 +41,43 @@ const KAKAO_PLACE_CATEGORY_GROUPS_BY_ZOOM = {
   wide: ['AC5', 'CT1'],
   medium: ['AC5', 'SC4', 'CT1'],
   close: ['AC5', 'SC4', 'PS3', 'CT1', 'AT4']
+}
+const TRIP_PLANNER_DEFAULT_SETTINGS = {
+  days: 2,
+  startTime: '09:00',
+  endTime: '21:00',
+  intensity: 'normal'
+}
+const TRIP_INTENSITY_PROFILES = {
+  relaxed: { label: '여유', minPlaces: 3, maxPlaces: 4, paceBuffer: 1.18 },
+  normal: { label: '보통', minPlaces: 4, maxPlaces: 5, paceBuffer: 1 },
+  packed: { label: '촘촘', minPlaces: 5, maxPlaces: 7, paceBuffer: 0.86 }
+}
+const PLACE_CATEGORY_LABELS = {
+  restaurant: '식사',
+  cafe: '카페',
+  viewpoint: '전망',
+  night_view: '야경',
+  bar: '바',
+  museum: '전시',
+  park: '공원',
+  attraction: '관광',
+  transport: '교통',
+  hotel: '숙소',
+  other: '기타'
+}
+const PLACE_CATEGORY_STAY_MINUTES = {
+  restaurant: 75,
+  cafe: 50,
+  viewpoint: 45,
+  night_view: 55,
+  bar: 90,
+  museum: 90,
+  park: 75,
+  attraction: 75,
+  transport: 25,
+  hotel: 0,
+  other: 60
 }
 const BLOCKED_WORDS = ['시발', '씨발', '병신', '좆', '개새끼', 'fuck', 'shit']
 
@@ -163,6 +200,294 @@ function buildMapSearchUrl(provider, place) {
   const query = encodeURIComponent(`${place?.name || ''} ${place?.address || ''}`.trim())
   if (provider === 'naver') return `https://map.naver.com/p/search/${query}`
   return `https://map.kakao.com/link/search/${query}`
+}
+
+function clampNumber(value, min, max, fallback) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return fallback
+  return Math.min(max, Math.max(min, number))
+}
+
+function parseTimeToMinutes(value) {
+  const [hours, minutes] = String(value || '').split(':').map(Number)
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null
+  return hours * 60 + minutes
+}
+
+function formatTimeFromMinutes(totalMinutes) {
+  const normalized = Math.max(0, Math.round(totalMinutes))
+  const hours = Math.floor(normalized / 60) % 24
+  const minutes = normalized % 60
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+}
+
+function formatDuration(minutes) {
+  const rounded = Math.max(0, Math.round(minutes))
+  const hours = Math.floor(rounded / 60)
+  const rest = rounded % 60
+  if (!hours) return `${rest}분`
+  if (!rest) return `${hours}시간`
+  return `${hours}시간 ${rest}분`
+}
+
+function isValidCoordinate(lat, lng) {
+  const latitude = Number(lat)
+  const longitude = Number(lng)
+  return Number.isFinite(latitude) && Number.isFinite(longitude) && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
+}
+
+function haversineDistanceKm(a, b) {
+  const earthRadiusKm = 6371
+  const toRad = value => (Number(value) * Math.PI) / 180
+  const dLat = toRad(b.latitude - a.latitude)
+  const dLng = toRad(b.longitude - a.longitude)
+  const lat1 = toRad(a.latitude)
+  const lat2 = toRad(b.latitude)
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
+}
+
+function estimateMoveMinutes(distanceKm, intensity) {
+  const profile = TRIP_INTENSITY_PROFILES[intensity] || TRIP_INTENSITY_PROFILES.normal
+  const base = 8 + (distanceKm / 18) * 60
+  return Math.min(70, Math.max(6, Math.round(base * profile.paceBuffer)))
+}
+
+function inferPlaceCategory(place) {
+  const source = `${place.category || ''} ${place.tag || ''} ${place.name || ''} ${place.memo || ''}`.toLowerCase()
+  if (/맛집|식당|음식|레스토랑|restaurant|dining|food/.test(source)) return 'restaurant'
+  if (/카페|커피|cafe|coffee/.test(source)) return 'cafe'
+  if (/야경|night/.test(source)) return 'night_view'
+  if (/전망|뷰|view|viewpoint|observatory/.test(source)) return 'viewpoint'
+  if (/술집|와인|칵테일|호프|펍|bar|pub/.test(source)) return 'bar'
+  if (/박물관|미술관|전시|museum|gallery/.test(source)) return 'museum'
+  if (/공원|수목원|park|garden/.test(source)) return 'park'
+  if (/숙소|호텔|hotel|stay/.test(source)) return 'hotel'
+  if (/역|공항|터미널|교통|station|airport|terminal|transport/.test(source)) return 'transport'
+  if (/관광|명소|궁|마을|해변|시장|attraction|tour/.test(source)) return 'attraction'
+  return place.category || place.tag ? 'attraction' : 'other'
+}
+
+function getOptionalArray(value) {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') return value.split(',').map(item => item.trim()).filter(Boolean)
+  return []
+}
+
+function getEstimatedStayMinutes(place, category) {
+  return clampNumber(
+    place.estimatedStayTime ?? place.estimated_stay_minutes ?? place.estimated_stay_time,
+    0,
+    240,
+    PLACE_CATEGORY_STAY_MINUTES[category] || PLACE_CATEGORY_STAY_MINUTES.other
+  )
+}
+
+function normalizePlannerPlaces(places) {
+  return (places || []).map((place, index) => {
+    const latitude = Number(place.latitude ?? place.lat)
+    const longitude = Number(place.longitude ?? place.lng)
+    const category = inferPlaceCategory(place)
+    const savedByUsers = getOptionalArray(place.savedByUsers ?? place.saved_by_users)
+    const priority = clampNumber(place.priority, 1, 5, Math.min(5, Math.max(1, savedByUsers.length || 1)))
+    return {
+      ...place,
+      plannerId: place.id || `place-${index}`,
+      name: place.name || '이름 없는 장소',
+      latitude,
+      longitude,
+      category,
+      estimatedStayTime: getEstimatedStayMinutes(place, category),
+      priority,
+      savedByUsers,
+      validCoordinate: isValidCoordinate(latitude, longitude)
+    }
+  })
+}
+
+function getNorthWestPlace(places) {
+  return [...places].sort((a, b) => {
+    if (a.longitude !== b.longitude) return a.longitude - b.longitude
+    return b.latitude - a.latitude
+  })[0]
+}
+
+function getClusterCentroid(cluster) {
+  return {
+    latitude: cluster.reduce((sum, place) => sum + place.latitude, 0) / cluster.length,
+    longitude: cluster.reduce((sum, place) => sum + place.longitude, 0) / cluster.length
+  }
+}
+
+function pickNearestPlace(source, candidates) {
+  return candidates
+    .map(place => ({ place, distance: haversineDistanceKm(source, place) }))
+    .sort((a, b) => a.distance - b.distance)[0]?.place
+}
+
+function clusterPlacesByProximity(places, dayCount, maxPerDay) {
+  const remaining = [...places].sort((a, b) => b.priority - a.priority)
+  const clusters = []
+  const days = Math.max(1, dayCount)
+
+  while (remaining.length > 0 && clusters.length < days) {
+    const seed = getNorthWestPlace(remaining)
+    remaining.splice(remaining.findIndex(place => place.plannerId === seed.plannerId), 1)
+    const cluster = [seed]
+    const targetSize = Math.min(maxPerDay, Math.ceil((remaining.length + 1) / (days - clusters.length)))
+
+    while (remaining.length > 0 && cluster.length < targetSize) {
+      const centroid = getClusterCentroid(cluster)
+      const nearest = pickNearestPlace(centroid, remaining)
+      remaining.splice(remaining.findIndex(place => place.plannerId === nearest.plannerId), 1)
+      cluster.push(nearest)
+    }
+
+    clusters.push(cluster)
+  }
+
+  return { clusters, overflow: remaining }
+}
+
+function orderNearestNeighbor(places) {
+  if (places.length <= 1) return places
+  const start = getNorthWestPlace(places)
+  const remaining = places.filter(place => place.plannerId !== start.plannerId)
+  const ordered = [start]
+
+  while (remaining.length > 0) {
+    const nearest = pickNearestPlace(ordered[ordered.length - 1], remaining)
+    remaining.splice(remaining.findIndex(place => place.plannerId === nearest.plannerId), 1)
+    ordered.push(nearest)
+  }
+
+  return ordered
+}
+
+function improveOrderForTimeWindows(places) {
+  const ordered = orderNearestNeighbor(places)
+  const evening = []
+  const restaurants = []
+  const cafes = []
+  const daytime = []
+
+  ordered.forEach(place => {
+    if (['night_view', 'bar'].includes(place.category)) evening.push(place)
+    else if (place.category === 'restaurant') restaurants.push(place)
+    else if (place.category === 'cafe') cafes.push(place)
+    else daytime.push(place)
+  })
+
+  const result = [...daytime]
+  if (restaurants[0]) result.splice(Math.min(2, result.length), 0, restaurants[0])
+  if (cafes[0]) result.splice(Math.min(result.length, restaurants[0] ? 3 : 2), 0, cafes[0])
+  if (restaurants[1]) result.push(restaurants[1])
+  result.push(...restaurants.slice(2), ...cafes.slice(1), ...evening)
+  return result
+}
+
+function adjustArrivalForCategory(minutes, category) {
+  if (category === 'restaurant') {
+    if (minutes < 11 * 60 + 30) return 11 * 60 + 30
+    if (minutes > 14 * 60 && minutes < 17 * 60 + 30) return 17 * 60 + 30
+  }
+  if (category === 'cafe' && minutes < 13 * 60 + 30) return 13 * 60 + 30
+  if (['night_view', 'bar'].includes(category) && minutes < 18 * 60) return 18 * 60
+  return minutes
+}
+
+function buildDailySchedule(places, settings) {
+  const profile = TRIP_INTENSITY_PROFILES[settings.intensity] || TRIP_INTENSITY_PROFILES.normal
+  const start = parseTimeToMinutes(settings.startTime) ?? 9 * 60
+  const rawEnd = parseTimeToMinutes(settings.endTime) ?? 21 * 60
+  const end = rawEnd <= start ? rawEnd + 24 * 60 : rawEnd
+  const maxPlaces = profile.maxPlaces
+  const ordered = improveOrderForTimeWindows(places).slice(0, maxPlaces)
+  const overflow = improveOrderForTimeWindows(places).slice(maxPlaces)
+  const items = []
+  let cursor = start
+  let distanceKm = 0
+  let previous = null
+
+  ordered.forEach(place => {
+    const travelKm = previous ? haversineDistanceKm(previous, place) : 0
+    const travelMinutes = previous ? estimateMoveMinutes(travelKm, settings.intensity) : 0
+    const arrival = adjustArrivalForCategory(cursor + travelMinutes, place.category)
+    const leave = arrival + place.estimatedStayTime
+
+    if (leave > end && items.length >= Math.max(1, profile.minPlaces - 1)) {
+      overflow.push(place)
+      return
+    }
+
+    distanceKm += travelKm
+    items.push({
+      place,
+      categoryLabel: PLACE_CATEGORY_LABELS[place.category] || PLACE_CATEGORY_LABELS.other,
+      travelKm,
+      travelMinutes,
+      startTime: formatTimeFromMinutes(arrival),
+      endTime: formatTimeFromMinutes(leave),
+      stayMinutes: place.estimatedStayTime
+    })
+    cursor = leave
+    previous = place
+  })
+
+  return {
+    items,
+    overflow,
+    distanceKm,
+    usedMinutes: Math.max(0, cursor - start)
+  }
+}
+
+function buildTripExplanation(plan) {
+  if (plan.validPlaces.length === 0) return '좌표가 있는 저장 장소가 없어 코스를 만들지 못했어요.'
+  const hasRestaurant = plan.days.some(day => day.items.some(item => item.place.category === 'restaurant'))
+  const hasCafe = plan.days.some(day => day.items.some(item => item.place.category === 'cafe'))
+  const hasEvening = plan.days.some(day => day.items.some(item => ['night_view', 'bar'].includes(item.place.category)))
+  const nearbyText = plan.days.length > 1 ? '가까운 장소끼리 하루 단위로 묶어 이동 부담을 줄였고' : '가까운 장소부터 이어지도록 정리했고'
+  const mealText = hasRestaurant ? ', 식사 장소는 점심이나 저녁 시간대에 맞췄어요' : ''
+  const cafeText = hasCafe ? ', 카페는 식사 뒤나 오후 휴식 흐름에 배치했어요' : ''
+  const eveningText = hasEvening ? ', 야경이나 바처럼 저녁에 어울리는 장소는 뒤쪽에 두었어요' : ''
+  return `이 코스는 ${nearbyText}${mealText}${cafeText}${eveningText}.`
+}
+
+function buildTripPlan(places, settings) {
+  const safeSettings = {
+    ...TRIP_PLANNER_DEFAULT_SETTINGS,
+    ...settings,
+    days: clampNumber(settings.days, 1, 14, TRIP_PLANNER_DEFAULT_SETTINGS.days),
+    intensity: TRIP_INTENSITY_PROFILES[settings.intensity] ? settings.intensity : TRIP_PLANNER_DEFAULT_SETTINGS.intensity
+  }
+  const normalized = normalizePlannerPlaces(places)
+  const validPlaces = normalized.filter(place => place.validCoordinate && place.estimatedStayTime > 0)
+  const invalidPlaces = normalized.filter(place => !place.validCoordinate)
+  const profile = TRIP_INTENSITY_PROFILES[safeSettings.intensity]
+  const maxPoolSize = safeSettings.days * profile.maxPlaces
+  const planningPool = [...validPlaces]
+    .sort((a, b) => b.priority - a.priority)
+    .slice(0, maxPoolSize)
+  const capacityOverflow = validPlaces
+    .filter(place => !planningPool.some(candidate => candidate.plannerId === place.plannerId))
+  const { clusters, overflow } = clusterPlacesByProximity(planningPool, safeSettings.days, profile.maxPlaces)
+  const days = Array.from({ length: safeSettings.days }, (_, index) => {
+    const schedule = buildDailySchedule(clusters[index] || [], safeSettings)
+    return {
+      day: index + 1,
+      ...schedule
+    }
+  })
+  const scheduledIds = new Set(days.flatMap(day => day.items.map(item => item.place.plannerId)))
+  const unscheduled = [...capacityOverflow, ...overflow, ...days.flatMap(day => day.overflow)]
+    .filter(place => !scheduledIds.has(place.plannerId))
+    .filter((place, index, array) => array.findIndex(item => item.plannerId === place.plannerId) === index)
+  const plan = { settings: safeSettings, days, validPlaces, invalidPlaces, unscheduled }
+  return {
+    ...plan,
+    explanation: buildTripExplanation(plan)
+  }
 }
 
 function buildOAuthUser(authSession) {
@@ -776,6 +1101,8 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [noticeMode, setNoticeMode] = useState(false)
   const [noticeDetailOpen, setNoticeDetailOpen] = useState(false)
+  const [plannerOpen, setPlannerOpen] = useState(false)
+  const [plannerSettings, setPlannerSettings] = useState(() => ({ ...TRIP_PLANNER_DEFAULT_SETTINGS }))
   const [membersOpen, setMembersOpen] = useState(false)
   const [kickConfirmMember, setKickConfirmMember] = useState(null)
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
@@ -874,6 +1201,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
 
   const orderedPlaces = orderPlaces(places)
   const displayPlaces = dragPreviewPlaces || orderedPlaces
+  const tripPlan = useMemo(() => buildTripPlan(places, plannerSettings), [places, plannerSettings])
 
   function getPlaceRouteIndex(placeId) {
     return orderedPlaces.findIndex(place => place.id === placeId)
@@ -2481,6 +2809,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             <p>{members.length}명 · 저장된 장소 {places.length}곳</p>
           </div>
           <div className="toolbarActions">
+            <button className="iconButton" onClick={() => setPlannerOpen(true)} title="일정 추천"><CalendarDays size={21} /></button>
             <button className="iconButton" onClick={() => setMembersOpen(true)} title="멤버"><Users size={21} /></button>
             <button className="iconButton chatCollapseButton" onClick={() => setChatOpen(false)} title="채팅 접기"><PanelRightClose size={21} /></button>
             {isOwner && <button className="iconButton danger" onClick={() => setDeleteConfirmOpen(true)} title="방 삭제"><Trash2 size={21} /></button>}
@@ -2563,6 +2892,64 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           <button className="iconButton" onClick={() => setNoticeDetailOpen(false)} title="닫기"><X size={20} /></button>
         </div>
         <p>{roomInfo.notice}</p>
+      </div>
+    </div>}
+    {plannerOpen && <div className="modalBackdrop" onClick={() => setPlannerOpen(false)}>
+      <div className="itineraryModal" onClick={e => e.stopPropagation()}>
+        <div className="modalHead">
+          <div>
+            <b>일정 추천</b>
+            <span>{tripPlan.validPlaces.length}곳 기준 · {tripPlan.settings.days}일</span>
+          </div>
+          <button className="iconButton" onClick={() => setPlannerOpen(false)} title="닫기"><X size={20} /></button>
+        </div>
+        <div className="plannerControls">
+          <label>
+            <span>여행 일수</span>
+            <input type="number" min="1" max="14" value={plannerSettings.days} onChange={event => setPlannerSettings(prev => ({ ...prev, days: event.target.value }))} />
+          </label>
+          <label>
+            <span>시작</span>
+            <input type="time" value={plannerSettings.startTime} onChange={event => setPlannerSettings(prev => ({ ...prev, startTime: event.target.value }))} />
+          </label>
+          <label>
+            <span>종료</span>
+            <input type="time" value={plannerSettings.endTime} onChange={event => setPlannerSettings(prev => ({ ...prev, endTime: event.target.value }))} />
+          </label>
+          <div className="plannerIntensity">
+            {Object.entries(TRIP_INTENSITY_PROFILES).map(([key, profile]) => (
+              <button key={key} className={plannerSettings.intensity === key ? 'active' : ''} onClick={() => setPlannerSettings(prev => ({ ...prev, intensity: key }))}>{profile.label}</button>
+            ))}
+          </div>
+        </div>
+        <div className="plannerExplanation">{tripPlan.explanation}</div>
+        {tripPlan.validPlaces.length === 0 ? <div className="plannerEmpty">좌표가 있는 저장 장소가 없어요.</div> : <div className="plannerDays">
+          {tripPlan.days.map(day => <section key={day.day} className="plannerDay">
+            <header>
+              <b>Day {day.day}</b>
+              <span>{day.items.length}곳 · 이동 {day.distanceKm.toFixed(1)}km · {formatDuration(day.usedMinutes)}</span>
+            </header>
+            {day.items.length > 0 ? <ol>
+              {day.items.map((item, index) => <li key={item.place.plannerId}>
+                <time>{item.startTime}</time>
+                <div>
+                  <b>{index + 1}. {item.place.name}</b>
+                  <span>{item.categoryLabel} · 체류 {formatDuration(item.stayMinutes)}{item.travelMinutes > 0 ? ` · 이동 ${formatDuration(item.travelMinutes)}` : ''}</span>
+                </div>
+              </li>)}
+            </ol> : <p>추천할 장소가 없어요.</p>}
+          </section>)}
+        </div>}
+        {(tripPlan.invalidPlaces.length > 0 || tripPlan.unscheduled.length > 0) && <div className="plannerWarnings">
+          {tripPlan.invalidPlaces.length > 0 && <section>
+            <b>위치 정보 필요</b>
+            <span>{tripPlan.invalidPlaces.map(place => place.name).join(', ')}</span>
+          </section>}
+          {tripPlan.unscheduled.length > 0 && <section>
+            <b>일정 초과</b>
+            <span>{tripPlan.unscheduled.map(place => place.name).join(', ')}</span>
+          </section>}
+        </div>}
       </div>
     </div>}
     {membersOpen && <div className="modalBackdrop" onClick={() => setMembersOpen(false)}>

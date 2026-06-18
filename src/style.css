@@ -369,6 +369,30 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .confirmModal{width:min(360px,calc(100vw - 32px));background:rgba(255,255,255,.96);border:1px solid rgba(0,0,0,.1);border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.24);padding:22px;text-align:center}
 .noticeDetailModal{width:min(420px,calc(100vw - 32px));max-height:min(520px,calc(100vh - 48px));overflow:auto;background:rgba(255,255,255,.66);border:1px solid rgba(255,255,255,.82);border-radius:28px;box-shadow:0 28px 90px rgba(0,0,0,.24);padding:16px;backdrop-filter:blur(34px) saturate(1.45)}
 .noticeDetailModal p{margin:0;padding:14px;border-radius:18px;background:rgba(255,255,255,.46);color:#1d1d1f;font-size:16px;font-weight:720;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.itineraryModal{width:min(760px,calc(100vw - 32px));max-height:min(760px,calc(100vh - 48px));overflow:auto;background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.9);border-radius:28px;box-shadow:0 28px 90px rgba(0,0,0,.24);padding:16px;backdrop-filter:blur(34px) saturate(1.45)}
+.plannerControls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:12px}
+.plannerControls label{min-width:0;display:grid;gap:6px;padding:10px;border-radius:16px;background:rgba(242,242,247,.7);border:1px solid rgba(0,0,0,.05)}
+.plannerControls label span{color:#6e6e73;font-size:12px;font-weight:850}
+.plannerControls input{height:38px;border-radius:12px;background:#fff;font-size:15px;font-weight:800}
+.plannerIntensity{grid-column:1 / -1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:5px;border-radius:16px;background:rgba(118,118,128,.13)}
+.plannerIntensity button{height:38px;border-radius:12px;background:transparent;color:#3a3a3c;font-weight:900}
+.plannerIntensity button.active{background:#0a84ff;color:#fff;box-shadow:0 8px 18px rgba(10,132,255,.18)}
+.plannerExplanation{margin-bottom:12px;padding:12px 14px;border-radius:17px;background:rgba(10,132,255,.1);color:#074f9a;font-size:14px;font-weight:820;line-height:1.42}
+.plannerDays{display:grid;gap:10px}
+.plannerDay{padding:12px;border-radius:18px;background:rgba(242,242,247,.7);border:1px solid rgba(0,0,0,.05)}
+.plannerDay header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.plannerDay header b{font-size:17px}
+.plannerDay header span{color:#6e6e73;font-size:12px;font-weight:820;text-align:right}
+.plannerDay ol{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.plannerDay li{display:grid;grid-template-columns:54px minmax(0,1fr);gap:9px;align-items:start;padding:9px;border-radius:14px;background:rgba(255,255,255,.64)}
+.plannerDay time{height:28px;display:grid;place-items:center;border-radius:11px;background:#fff;color:#0a84ff;font-size:12px;font-weight:900}
+.plannerDay li b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
+.plannerDay li span{display:block;margin-top:4px;color:#6e6e73;font-size:12px;font-weight:760}
+.plannerDay p,.plannerEmpty{margin:0;padding:12px;border-radius:14px;background:rgba(255,255,255,.58);color:#8e8e93;font-weight:820;text-align:center}
+.plannerWarnings{display:grid;gap:8px;margin-top:12px}
+.plannerWarnings section{display:grid;gap:4px;padding:10px 12px;border-radius:15px;background:rgba(255,204,0,.16);color:#6d5300}
+.plannerWarnings b{font-size:13px}
+.plannerWarnings span{font-size:12px;font-weight:760;line-height:1.35}
 .confirmModal>b{display:block;font-size:23px;margin-bottom:8px}
 .confirmModal p{margin:0;color:#6e6e73;line-height:1.42;font-weight:650}
 .confirmModal>div{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px}
@@ -398,6 +422,12 @@ body.resizingChat{cursor:col-resize;user-select:none}
 }
 @media(max-width:720px){
   .modalBackdrop{place-items:center;align-items:center;padding-bottom:12dvh}
+  .itineraryModal{width:calc(100vw - 24px);max-height:calc(100dvh - 96px);padding:14px;border-radius:24px}
+  .plannerControls{grid-template-columns:1fr 1fr}
+  .plannerControls label:first-child{grid-column:1 / -1}
+  .plannerDay header{display:grid;gap:3px}
+  .plannerDay header span{text-align:left}
+  .plannerDay li{grid-template-columns:48px minmax(0,1fr)}
   .loadingOverlay{align-content:center;padding-bottom:12dvh}
   .room,.room.chatCollapsed{grid-template-columns:1fr;height:100dvh;padding-bottom:0}
   .mapArea{grid-column:1;grid-row:1;height:100dvh}

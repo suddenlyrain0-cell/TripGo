@@ -37,6 +37,10 @@ create table if not exists places (
   lat double precision not null,
   lng double precision not null,
   tag text default '기타',
+  category text,
+  estimated_stay_minutes integer,
+  priority integer,
+  saved_by_users text[],
   memo text,
   sort_order integer,
   created_at timestamptz default now()
