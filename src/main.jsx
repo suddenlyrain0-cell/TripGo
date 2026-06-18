@@ -15,6 +15,8 @@ const ANALYTICS_VISITOR_STORAGE_KEY = 'trip_analytics_visitor'
 const ANALYTICS_DAILY_VISIT_STORAGE_KEY = 'trip_analytics_daily_visit'
 const ROUTE_COLORS = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#0a84ff', '#5856d6', '#af52de']
 const ROOM_PASSWORD_DIGITS_ONLY = /^\d+$/
+const MESSAGE_REALTIME_FALLBACK_DELAY_MS = 3000
+const MESSAGE_FALLBACK_POLL_MS = 2500
 const ROUTE_LOGOS = [
   '/wherego-logo.png',
   '/wherego-logo-orange.png',
@@ -96,6 +98,15 @@ function validateRoomPassword(value) {
   if (!password) return '방 비밀번호를 입력해주세요.'
   if (!ROOM_PASSWORD_DIGITS_ONLY.test(password)) return '방 비밀번호는 숫자만 사용할 수 있어요.'
   return ''
+}
+
+function mergeMessagesById(previousMessages, nextMessages) {
+  const byId = new Map()
+  const messages = [...previousMessages, ...nextMessages]
+  messages.forEach(message => {
+    if (message?.id) byId.set(message.id, message)
+  })
+  return [...byId.values()].sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')))
 }
 
 function getProviderLabel(provider) {
@@ -889,11 +900,45 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   useEffect(() => {
     loadInitial()
     loadJoinedRooms()
-    const channel = supabase.channel(`room-${session.roomId}`)
+    let closed = false
+    let messagesSubscribed = false
+    let fallbackTimer = null
+    const stopMessageFallback = () => {
+      if (!fallbackTimer) return
+      clearInterval(fallbackTimer)
+      fallbackTimer = null
+    }
+    const pollMessages = async () => {
+      const { data } = await supabase.from('messages').select('*').eq('room_id', session.roomId).order('created_at')
+      if (!closed && data) setMessages(prev => mergeMessagesById(prev, data))
+    }
+    const startMessageFallback = () => {
+      if (fallbackTimer) return
+      pollMessages()
+      fallbackTimer = setInterval(pollMessages, MESSAGE_FALLBACK_POLL_MS)
+    }
+    const fallbackDelayTimer = setTimeout(() => {
+      if (!messagesSubscribed) startMessageFallback()
+    }, MESSAGE_REALTIME_FALLBACK_DELAY_MS)
+    const messagesChannel = supabase.channel(`room-${session.roomId}-messages`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${session.roomId}` }, payload => {
-        setMessages(prev => prev.some(message => message.id === payload.new.id) ? prev : [...prev, payload.new])
+        setMessages(prev => mergeMessagesById(prev, [payload.new]))
         if (!chatOpenRef.current || mobileViewRef.current !== 'chat') setUnreadCount(count => count + 1)
       })
+      .subscribe(status => {
+        if (closed) return
+        if (status === 'SUBSCRIBED') {
+          messagesSubscribed = true
+          clearTimeout(fallbackDelayTimer)
+          stopMessageFallback()
+          return
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('messages realtime subscription fallback started', status)
+          startMessageFallback()
+        }
+      })
+    const roomChannel = supabase.channel(`room-${session.roomId}-room-events`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'places', filter: `room_id=eq.${session.roomId}` }, payload => {
         if (payload.eventType === 'INSERT') {
           setPlaces(prev => prev.some(place => place.id === payload.new.id) ? prev : orderPlaces([...prev, payload.new]))
@@ -939,8 +984,18 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         }
         setRoomInfo(payload.new || { owner: '' })
       })
-      .subscribe()
-    return () => supabase.removeChannel(channel)
+      .subscribe(status => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('room realtime subscription failed', status)
+        }
+      })
+    return () => {
+      closed = true
+      clearTimeout(fallbackDelayTimer)
+      stopMessageFallback()
+      supabase.removeChannel(messagesChannel)
+      supabase.removeChannel(roomChannel)
+    }
   }, [session.roomId, session.username])
 
   useEffect(() => {
@@ -1648,7 +1703,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     }
 
     if (data) {
-      setMessages(prev => prev.map(message => message.id === optimisticId ? data : message))
+      setMessages(prev => mergeMessagesById(prev.filter(message => message.id !== optimisticId), [data]))
     }
   }
 
