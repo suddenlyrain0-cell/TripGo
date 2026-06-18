@@ -17,6 +17,7 @@ const ROUTE_COLORS = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#0a84ff', '#5
 const ROOM_PASSWORD_DIGITS_ONLY = /^\d+$/
 const MESSAGE_REALTIME_FALLBACK_DELAY_MS = 3000
 const MESSAGE_FALLBACK_POLL_MS = 2500
+const MEMBER_FALLBACK_POLL_MS = 4000
 const ROUTE_LOGOS = [
   '/wherego-logo.png',
   '/wherego-logo-orange.png',
@@ -968,6 +969,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     const fallbackDelayTimer = setTimeout(() => {
       if (!messagesSubscribed) startMessageFallback()
     }, MESSAGE_REALTIME_FALLBACK_DELAY_MS)
+    const membershipTimer = setInterval(checkCurrentMembership, MEMBER_FALLBACK_POLL_MS)
     const messagesChannel = supabase.channel(`room-${session.roomId}-messages`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${session.roomId}` }, payload => {
         setMessages(prev => mergeMessagesById(prev, [payload.new]))
@@ -1040,6 +1042,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     return () => {
       closed = true
       clearTimeout(fallbackDelayTimer)
+      clearInterval(membershipTimer)
       stopMessageFallback()
       supabase.removeChannel(messagesChannel)
       supabase.removeChannel(roomChannel)
@@ -1302,11 +1305,41 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     setAllRooms(data || [])
   }
 
+  async function handleCurrentMembershipRemoved() {
+    const nextRooms = await loadAvailableJoinedRooms(session.roomId)
+    if (nextRooms.length > 0) {
+      const nextRoom = nextRooms[0]
+      const next = { ...session, roomId: nextRoom.id, roomName: nextRoom.name }
+      localStorage.setItem(ROOM_SESSION_STORAGE_KEY, JSON.stringify(next))
+      setJoinedRooms(nextRooms)
+      setMobileView('map')
+      setMembersOpen(false)
+      setKickConfirmMember(null)
+      setSession(next)
+      return
+    }
+
+    localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
+    setSession(null)
+  }
+
+  async function checkCurrentMembership() {
+    const { data, error } = await supabase
+      .from('room_members')
+      .select('id')
+      .eq('room_id', session.roomId)
+      .eq('username', session.username)
+      .limit(1)
+
+    if (error) return
+    if ((data || []).length === 0) await handleCurrentMembershipRemoved()
+  }
+
   async function loadMembers() {
-    const { data } = await supabase.from('room_members').select('*').eq('room_id', session.roomId).order('created_at')
-    if ((data || []).length > 0 && !(data || []).some(member => member.username === session.username)) {
-      localStorage.removeItem(ROOM_SESSION_STORAGE_KEY)
-      setSession(null)
+    const { data, error } = await supabase.from('room_members').select('*').eq('room_id', session.roomId).order('created_at')
+    if (error) return
+    if (!(data || []).some(member => member.username === session.username)) {
+      await handleCurrentMembershipRemoved()
       return
     }
     setMembers(data || [])
