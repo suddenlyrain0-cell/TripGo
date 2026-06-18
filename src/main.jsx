@@ -10,6 +10,7 @@ const MIN_LOADING_MS = 700
 const AUTH_STORAGE_KEY = 'trip_auth_user'
 const ROOM_SESSION_STORAGE_KEY = 'trip_room_session'
 const SEARCH_STORAGE_KEY = 'trip_recent_searches'
+const MAP_POINT_NAME_CACHE_STORAGE_KEY = 'trip_map_point_name_cache'
 const PLACE_ORDER_STORAGE_KEY = 'trip_place_order'
 const ANALYTICS_VISITOR_STORAGE_KEY = 'trip_analytics_visitor'
 const ANALYTICS_DAILY_VISIT_STORAGE_KEY = 'trip_analytics_daily_visit'
@@ -37,9 +38,9 @@ const POPULAR_TRAVEL_PLACES = [
   { name: '강릉 안목해변', area: '강원 강릉시' }
 ]
 const KAKAO_PLACE_CATEGORY_GROUPS_BY_ZOOM = {
-  wide: ['SC4', 'AC5', 'CT1', 'AT4'],
-  medium: ['SC4', 'AC5', 'PS3', 'CT1', 'AT4', 'AD5'],
-  close: ['SC4', 'AC5', 'PS3', 'CT1', 'AT4', 'AD5', 'FD6', 'CE7']
+  wide: ['AC5', 'CT1'],
+  medium: ['AC5', 'SC4', 'CT1'],
+  close: ['AC5', 'SC4', 'PS3', 'CT1', 'AT4']
 }
 const BLOCKED_WORDS = ['시발', '씨발', '병신', '좆', '개새끼', 'fuck', 'shit']
 
@@ -945,6 +946,36 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     }
   }
 
+  function getMapPointCacheGroup(level) {
+    if (level <= 3) return { name: 'close', precision: 5 }
+    if (level <= 6) return { name: 'medium', precision: 4 }
+    return { name: 'wide', precision: 3 }
+  }
+
+  function getMapPointCacheKey(latLng, level) {
+    const { name, precision } = getMapPointCacheGroup(level)
+    return `${name}:${latLng.getLat().toFixed(precision)}:${latLng.getLng().toFixed(precision)}`
+  }
+
+  function getCachedMapPointName(cacheKey) {
+    const cache = safeParseJson(sessionStorage.getItem(MAP_POINT_NAME_CACHE_STORAGE_KEY)) || {}
+    return cache[cacheKey] || null
+  }
+
+  function cacheMapPointName(cacheKey, place) {
+    if (!cacheKey || !place?.place_name) return
+    const cache = safeParseJson(sessionStorage.getItem(MAP_POINT_NAME_CACHE_STORAGE_KEY)) || {}
+    const next = {
+      ...cache,
+      [cacheKey]: {
+        place_name: place.place_name,
+        cached_at: Date.now()
+      }
+    }
+    const entries = Object.entries(next).sort((a, b) => (b[1]?.cached_at || 0) - (a[1]?.cached_at || 0)).slice(0, 80)
+    sessionStorage.setItem(MAP_POINT_NAME_CACHE_STORAGE_KEY, JSON.stringify(Object.fromEntries(entries)))
+  }
+
   function getNearbyPlaceSearchOptions(level) {
     if (level <= 3) {
       return { categories: KAKAO_PLACE_CATEGORY_GROUPS_BY_ZOOM.close, radius: 45 }
@@ -986,43 +1017,51 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     setSelectedSavedPlace(null)
     setSelectedPlace(createMapPointPlace(latLng))
     const currentLevel = mapObj.current?.getLevel?.() || mapLevel
+    const cacheKey = getMapPointCacheKey(latLng, currentLevel)
+    const cachedPlace = getCachedMapPointName(cacheKey)
+    const applyMapPointPlace = (addressInfo = {}, nearbyPlace = null, shouldCache = false) => {
+      const nextPlace = createMapPointPlace(latLng, addressInfo, nearbyPlace)
+      setSelectedPlace(prev => {
+        if (!prev || prev.x !== nextPlace.x || prev.y !== nextPlace.y) return prev
+        return nextPlace
+      })
+      if (shouldCache) cacheMapPointName(cacheKey, nextPlace)
+    }
 
     const geocoder = kakaoRef.current?.maps?.services ? new kakaoRef.current.maps.services.Geocoder() : null
     if (!geocoder) {
+      if (cachedPlace) {
+        applyMapPointPlace({}, cachedPlace)
+        return
+      }
       findNearbyPlace(latLng, currentLevel, nearbyPlace => {
-        const nextPlace = createMapPointPlace(latLng, {}, nearbyPlace)
-        setSelectedPlace(prev => {
-          if (!prev || prev.x !== nextPlace.x || prev.y !== nextPlace.y) return prev
-          return nextPlace
-        })
+        applyMapPointPlace({}, nearbyPlace, true)
       })
       return
     }
 
     geocoder.coord2Address(latLng.getLng(), latLng.getLat(), (result, status) => {
       if (status !== kakaoRef.current.maps.services.Status.OK || !result?.[0]) {
+        if (cachedPlace) {
+          applyMapPointPlace({}, cachedPlace)
+          return
+        }
         findNearbyPlace(latLng, currentLevel, nearbyPlace => {
-          const nextPlace = createMapPointPlace(latLng, {}, nearbyPlace)
-          setSelectedPlace(prev => {
-            if (!prev || prev.x !== nextPlace.x || prev.y !== nextPlace.y) return prev
-            return nextPlace
-          })
+          applyMapPointPlace({}, nearbyPlace, true)
         })
         return
       }
-      const nextPlace = createMapPointPlace(latLng, result[0])
-      setSelectedPlace(prev => {
-        if (!prev || prev.x !== nextPlace.x || prev.y !== nextPlace.y) return prev
-        return nextPlace
-      })
-      if (result[0].road_address?.building_name) return
+      const hasBuildingName = Boolean(result[0].road_address?.building_name)
+      applyMapPointPlace(result[0], null, hasBuildingName)
+      if (hasBuildingName) return
+
+      if (cachedPlace) {
+        applyMapPointPlace(result[0], cachedPlace)
+        return
+      }
 
       findNearbyPlace(latLng, currentLevel, nearbyPlace => {
-        const namedPlace = createMapPointPlace(latLng, result[0], nearbyPlace)
-        setSelectedPlace(prev => {
-          if (!prev || prev.x !== namedPlace.x || prev.y !== namedPlace.y) return prev
-          return namedPlace
-        })
+        applyMapPointPlace(result[0], nearbyPlace, true)
       })
     })
   }
