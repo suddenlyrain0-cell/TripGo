@@ -36,6 +36,7 @@ const POPULAR_TRAVEL_PLACES = [
   { name: '전주한옥마을', area: '전북 전주시' },
   { name: '강릉 안목해변', area: '강원 강릉시' }
 ]
+const KAKAO_PLACE_CATEGORY_GROUPS = ['SC4', 'AC5', 'PS3', 'CT1', 'AT4', 'AD5', 'FD6', 'CE7', 'MT1', 'CS2', 'PK6', 'OL7', 'SW8', 'BK9', 'AG2', 'PO3', 'HP8', 'PM9']
 const BLOCKED_WORDS = ['시발', '씨발', '병신', '좆', '개새끼', 'fuck', 'shit']
 
 function safeParseJson(value) {
@@ -923,19 +924,44 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     }
   }
 
-  function createMapPointPlace(latLng, addressInfo = {}) {
+  function createMapPointPlace(latLng, addressInfo = {}, nearbyPlace = null) {
     const lat = latLng.getLat()
     const lng = latLng.getLng()
+    const buildingName = addressInfo.road_address?.building_name || ''
     const roadAddress = addressInfo.road_address?.address_name || ''
     const address = addressInfo.address?.address_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+    const displayAddress = roadAddress || address
     return {
       id: `map-click-${Date.now()}`,
-      place_name: '지도에서 선택한 위치',
+      place_name: buildingName || nearbyPlace?.place_name || displayAddress,
       road_address_name: roadAddress,
       address_name: address,
       x: String(lng),
       y: String(lat)
     }
+  }
+
+  function findNearbyPlace(latLng, onFound) {
+    const services = kakaoRef.current?.maps?.services
+    if (!services) return
+    const placesService = new services.Places()
+    const nearbyPlaces = []
+    let remaining = KAKAO_PLACE_CATEGORY_GROUPS.length
+
+    KAKAO_PLACE_CATEGORY_GROUPS.forEach(category => {
+      placesService.categorySearch(category, (data, status) => {
+        if (status === services.Status.OK) nearbyPlaces.push(...data)
+        remaining -= 1
+        if (remaining > 0 || nearbyPlaces.length === 0) return
+
+        nearbyPlaces.sort((a, b) => Number(a.distance || Infinity) - Number(b.distance || Infinity))
+        onFound(nearbyPlaces[0])
+      }, {
+        location: latLng,
+        radius: 90,
+        sort: services.SortBy.DISTANCE
+      })
+    })
   }
 
   function selectMapPoint(latLng) {
@@ -946,14 +972,41 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     setSelectedPlace(createMapPointPlace(latLng))
 
     const geocoder = kakaoRef.current?.maps?.services ? new kakaoRef.current.maps.services.Geocoder() : null
-    if (!geocoder) return
+    if (!geocoder) {
+      findNearbyPlace(latLng, nearbyPlace => {
+        const nextPlace = createMapPointPlace(latLng, {}, nearbyPlace)
+        setSelectedPlace(prev => {
+          if (!prev || prev.x !== nextPlace.x || prev.y !== nextPlace.y) return prev
+          return nextPlace
+        })
+      })
+      return
+    }
 
     geocoder.coord2Address(latLng.getLng(), latLng.getLat(), (result, status) => {
-      if (status !== kakaoRef.current.maps.services.Status.OK || !result?.[0]) return
+      if (status !== kakaoRef.current.maps.services.Status.OK || !result?.[0]) {
+        findNearbyPlace(latLng, nearbyPlace => {
+          const nextPlace = createMapPointPlace(latLng, {}, nearbyPlace)
+          setSelectedPlace(prev => {
+            if (!prev || prev.x !== nextPlace.x || prev.y !== nextPlace.y) return prev
+            return nextPlace
+          })
+        })
+        return
+      }
       const nextPlace = createMapPointPlace(latLng, result[0])
       setSelectedPlace(prev => {
         if (!prev || prev.x !== nextPlace.x || prev.y !== nextPlace.y) return prev
         return nextPlace
+      })
+      if (result[0].road_address?.building_name) return
+
+      findNearbyPlace(latLng, nearbyPlace => {
+        const namedPlace = createMapPointPlace(latLng, result[0], nearbyPlace)
+        setSelectedPlace(prev => {
+          if (!prev || prev.x !== namedPlace.x || prev.y !== namedPlace.y) return prev
+          return namedPlace
+        })
       })
     })
   }
