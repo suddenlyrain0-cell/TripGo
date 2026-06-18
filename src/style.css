@@ -320,6 +320,10 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .msg{position:relative;margin-bottom:13px;cursor:pointer}
 .msg b{display:block;margin:0 0 5px 8px;color:#7a7a80;font-size:13px;font-weight:800}
 .msg p{display:inline-block;max-width:92%;margin:0;background:#e5e5ea;color:#1d1d1f;padding:11px 14px;border-radius:19px;line-height:1.36;word-break:break-word}
+.msg.mine{text-align:right}
+.msg.mine>b{margin:0 8px 5px 0}
+.msg.mine>p{background:#0a84ff;color:#fff;text-align:left}
+.msg.mine .reactionPicker,.msg.mine .reactionSummary{margin-left:auto;margin-right:8px}
 .system p{background:#fff4d8;color:#8a4b00}
 .reactionPicker{width:max-content;max-width:100%;display:flex;align-items:center;gap:7px;margin:7px 0 3px 8px;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.34);border:1px solid rgba(255,255,255,.64);box-shadow:0 14px 38px rgba(0,0,0,.14);backdrop-filter:blur(34px) saturate(1.45)}
 .reactionPicker button{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:transparent;border:0;font-size:20px;line-height:1;padding:0;overflow:visible}

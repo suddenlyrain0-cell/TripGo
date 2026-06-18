@@ -2270,9 +2270,10 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
               {renderReactionControls(m)}
             </div>
           }
+          const isMine = m.type !== 'system' && m.username === session.username
           return <div
             key={m.id}
-            className={m.type === 'system' ? 'system msg' : 'msg'}
+            className={m.type === 'system' ? 'system msg' : isMine ? 'msg mine' : 'msg'}
             onClick={() => handleMessageClick(m.id)}
             onPointerDown={event => startMessageLongPress(event, m.id)}
             onPointerUp={finishMessageLongPress}
