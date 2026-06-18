@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ArrowLeft, CalendarDays, Crown, Link2, LocateFixed, LogOut, MapPin, Megaphone, MessageCircle, PanelRightClose, Plus, Search, Send, Trash2, UserMinus, Users, X } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './supabase'
-import { TRIP_INTENSITY_PROFILES, TRIP_PLANNER_DEFAULT_SETTINGS, buildTripPlan, formatDuration } from './routePlanner'
+import { TRIP_INTENSITY_PROFILES, TRIP_PLANNER_DEFAULT_SETTINGS, buildTripPlan } from './routePlanner'
 import './style.css'
 
 const TAGS = ['관광', '식당', '숙소', '카페', '교통', '기타']
@@ -2604,32 +2604,24 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             ))}
           </div>
         </div>
-        <div className="plannerExplanation">{tripPlan.explanation}</div>
         {tripPlan.validPlaces.length === 0 ? <div className="plannerEmpty">좌표가 있는 저장 장소가 없어요.</div> : <div className="plannerDays">
           {tripPlan.days.map(day => <section key={day.day} className="plannerDay">
             <header>
               <b>Day {day.day}</b>
-              <span>{day.items.length}곳 · 이동 {day.distanceKm.toFixed(1)}km · {formatDuration(day.usedMinutes)}</span>
+              <span>{day.items.length}곳</span>
             </header>
-            {day.items.length > 0 ? <ol>
+            {day.items.length > 0 ? <ol className="plannerRouteSequence">
               {day.items.map((item, index) => <li key={item.place.plannerId}>
-                <time>{item.startTime}</time>
-                <div>
-                  <b>{index + 1}. {item.place.name}</b>
-                  <span>{item.categoryLabel} · 체류 {formatDuration(item.stayMinutes)}{item.travelMinutes > 0 ? ` · 이동 ${formatDuration(item.travelMinutes)}` : ''}{item.restMinutes > 0 ? ` · 휴식 ${formatDuration(item.restMinutes)}` : ''}</span>
-                </div>
+                <em>{index + 1}</em>
+                <b>{item.place.name}</b>
               </li>)}
             </ol> : <p>추천할 장소가 없어요.</p>}
           </section>)}
         </div>}
-        {(tripPlan.invalidPlaces.length > 0 || tripPlan.unscheduled.length > 0) && <div className="plannerWarnings">
+        {tripPlan.invalidPlaces.length > 0 && <div className="plannerWarnings">
           {tripPlan.invalidPlaces.length > 0 && <section>
             <b>위치 정보 필요</b>
             <span>{tripPlan.invalidPlaces.map(place => place.name).join(', ')}</span>
-          </section>}
-          {tripPlan.unscheduled.length > 0 && <section>
-            <b>일정 초과</b>
-            <span>{tripPlan.unscheduled.map(place => place.name).join(', ')}</span>
           </section>}
         </div>}
       </div>
