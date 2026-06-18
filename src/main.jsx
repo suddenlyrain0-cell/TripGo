@@ -49,9 +49,9 @@ const TRIP_PLANNER_DEFAULT_SETTINGS = {
   intensity: 'normal'
 }
 const TRIP_INTENSITY_PROFILES = {
-  relaxed: { label: '여유', minPlaces: 3, maxPlaces: 4, paceBuffer: 1.18 },
-  normal: { label: '보통', minPlaces: 4, maxPlaces: 5, paceBuffer: 1 },
-  packed: { label: '촘촘', minPlaces: 5, maxPlaces: 7, paceBuffer: 0.86 }
+  relaxed: { label: '여유', minPlaces: 3, targetPlaces: 3, maxPlaces: 4, paceBuffer: 1.22, stayMultiplier: 1.16, breakMinutes: 25 },
+  normal: { label: '보통', minPlaces: 4, targetPlaces: 4, maxPlaces: 5, paceBuffer: 1, stayMultiplier: 1, breakMinutes: 12 },
+  packed: { label: '촘촘', minPlaces: 5, targetPlaces: 6, maxPlaces: 7, paceBuffer: 0.82, stayMultiplier: 0.9, breakMinutes: 5 }
 }
 const PLACE_CATEGORY_LABELS = {
   restaurant: '식사',
@@ -402,20 +402,24 @@ function buildDailySchedule(places, settings) {
   const rawEnd = parseTimeToMinutes(settings.endTime) ?? 21 * 60
   const end = rawEnd <= start ? rawEnd + 24 * 60 : rawEnd
   const maxPlaces = profile.maxPlaces
-  const ordered = improveOrderForTimeWindows(places).slice(0, maxPlaces)
-  const overflow = improveOrderForTimeWindows(places).slice(maxPlaces)
+  const intensityTarget = Math.min(maxPlaces, profile.targetPlaces)
+  const sortedPlaces = improveOrderForTimeWindows(places)
+  const ordered = sortedPlaces.slice(0, intensityTarget)
+  const overflow = sortedPlaces.slice(intensityTarget)
   const items = []
   let cursor = start
   let distanceKm = 0
   let previous = null
 
-  ordered.forEach(place => {
+  ordered.forEach((place, index) => {
     const travelKm = previous ? haversineDistanceKm(previous, place) : 0
     const travelMinutes = previous ? estimateMoveMinutes(travelKm, settings.intensity) : 0
     const arrival = adjustArrivalForCategory(cursor + travelMinutes, place.category)
-    const leave = arrival + place.estimatedStayTime
+    const stayMinutes = Math.max(20, Math.round(place.estimatedStayTime * profile.stayMultiplier))
+    const leave = arrival + stayMinutes
+    const restMinutes = index < ordered.length - 1 ? profile.breakMinutes : 0
 
-    if (leave > end && items.length >= Math.max(1, profile.minPlaces - 1)) {
+    if (leave + restMinutes > end && items.length >= Math.max(1, profile.minPlaces - 1)) {
       overflow.push(place)
       return
     }
@@ -428,9 +432,10 @@ function buildDailySchedule(places, settings) {
       travelMinutes,
       startTime: formatTimeFromMinutes(arrival),
       endTime: formatTimeFromMinutes(leave),
-      stayMinutes: place.estimatedStayTime
+      stayMinutes,
+      restMinutes
     })
-    cursor = leave
+    cursor = leave + restMinutes
     previous = place
   })
 
@@ -444,14 +449,16 @@ function buildDailySchedule(places, settings) {
 
 function buildTripExplanation(plan) {
   if (plan.validPlaces.length === 0) return '좌표가 있는 저장 장소가 없어 코스를 만들지 못했어요.'
+  const profile = TRIP_INTENSITY_PROFILES[plan.settings.intensity] || TRIP_INTENSITY_PROFILES.normal
   const hasRestaurant = plan.days.some(day => day.items.some(item => item.place.category === 'restaurant'))
   const hasCafe = plan.days.some(day => day.items.some(item => item.place.category === 'cafe'))
   const hasEvening = plan.days.some(day => day.items.some(item => ['night_view', 'bar'].includes(item.place.category)))
   const nearbyText = plan.days.length > 1 ? '가까운 장소끼리 하루 단위로 묶어 이동 부담을 줄였고' : '가까운 장소부터 이어지도록 정리했고'
+  const intensityText = `${profile.label} 강도로 하루 ${profile.minPlaces}~${profile.maxPlaces}곳 안에서 ${profile.breakMinutes ? `장소 사이 ${profile.breakMinutes}분 휴식까지` : '휴식은 짧게'} 고려했어요`
   const mealText = hasRestaurant ? ', 식사 장소는 점심이나 저녁 시간대에 맞췄어요' : ''
   const cafeText = hasCafe ? ', 카페는 식사 뒤나 오후 휴식 흐름에 배치했어요' : ''
   const eveningText = hasEvening ? ', 야경이나 바처럼 저녁에 어울리는 장소는 뒤쪽에 두었어요' : ''
-  return `이 코스는 ${nearbyText}${mealText}${cafeText}${eveningText}.`
+  return `이 코스는 ${nearbyText}, ${intensityText}${mealText}${cafeText}${eveningText}.`
 }
 
 function buildTripPlan(places, settings) {
@@ -465,7 +472,7 @@ function buildTripPlan(places, settings) {
   const validPlaces = normalized.filter(place => place.validCoordinate && place.estimatedStayTime > 0)
   const invalidPlaces = normalized.filter(place => !place.validCoordinate)
   const profile = TRIP_INTENSITY_PROFILES[safeSettings.intensity]
-  const maxPoolSize = safeSettings.days * profile.maxPlaces
+  const maxPoolSize = safeSettings.days * profile.targetPlaces
   const planningPool = [...validPlaces]
     .sort((a, b) => b.priority - a.priority)
     .slice(0, maxPoolSize)
@@ -2918,7 +2925,10 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
           </label>
           <div className="plannerIntensity">
             {Object.entries(TRIP_INTENSITY_PROFILES).map(([key, profile]) => (
-              <button key={key} className={plannerSettings.intensity === key ? 'active' : ''} onClick={() => setPlannerSettings(prev => ({ ...prev, intensity: key }))}>{profile.label}</button>
+              <button key={key} className={plannerSettings.intensity === key ? 'active' : ''} onClick={() => setPlannerSettings(prev => ({ ...prev, intensity: key }))}>
+                <b>{profile.label}</b>
+                <span>{profile.minPlaces}-{profile.maxPlaces}곳</span>
+              </button>
             ))}
           </div>
         </div>
@@ -2934,7 +2944,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
                 <time>{item.startTime}</time>
                 <div>
                   <b>{index + 1}. {item.place.name}</b>
-                  <span>{item.categoryLabel} · 체류 {formatDuration(item.stayMinutes)}{item.travelMinutes > 0 ? ` · 이동 ${formatDuration(item.travelMinutes)}` : ''}</span>
+                  <span>{item.categoryLabel} · 체류 {formatDuration(item.stayMinutes)}{item.travelMinutes > 0 ? ` · 이동 ${formatDuration(item.travelMinutes)}` : ''}{item.restMinutes > 0 ? ` · 휴식 ${formatDuration(item.restMinutes)}` : ''}</span>
                 </div>
               </li>)}
             </ol> : <p>추천할 장소가 없어요.</p>}

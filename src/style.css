@@ -375,7 +375,9 @@ body.resizingChat{cursor:col-resize;user-select:none}
 .plannerControls label span{color:#6e6e73;font-size:12px;font-weight:850}
 .plannerControls input{height:38px;border-radius:12px;background:#fff;font-size:15px;font-weight:800}
 .plannerIntensity{grid-column:1 / -1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:5px;border-radius:16px;background:rgba(118,118,128,.13)}
-.plannerIntensity button{height:38px;border-radius:12px;background:transparent;color:#3a3a3c;font-weight:900}
+.plannerIntensity button{height:44px;border-radius:12px;background:transparent;color:#3a3a3c;font-weight:900;display:grid;place-items:center;gap:1px}
+.plannerIntensity button b{font-size:14px;line-height:1}
+.plannerIntensity button span{font-size:11px;color:inherit;opacity:.72;line-height:1}
 .plannerIntensity button.active{background:#0a84ff;color:#fff;box-shadow:0 8px 18px rgba(10,132,255,.18)}
 .plannerExplanation{margin-bottom:12px;padding:12px 14px;border-radius:17px;background:rgba(10,132,255,.1);color:#074f9a;font-size:14px;font-weight:820;line-height:1.42}
 .plannerDays{display:grid;gap:10px}
