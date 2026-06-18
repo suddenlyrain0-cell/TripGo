@@ -3,7 +3,7 @@ create extension if not exists pgcrypto;
 create table if not exists rooms (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  password text not null,
+  password text not null check (password ~ '^[0-9]+$'),
   owner text,
   notice text,
   notice_by text,

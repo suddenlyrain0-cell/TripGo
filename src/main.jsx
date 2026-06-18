@@ -14,6 +14,7 @@ const PLACE_ORDER_STORAGE_KEY = 'trip_place_order'
 const ANALYTICS_VISITOR_STORAGE_KEY = 'trip_analytics_visitor'
 const ANALYTICS_DAILY_VISIT_STORAGE_KEY = 'trip_analytics_daily_visit'
 const ROUTE_COLORS = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#0a84ff', '#5856d6', '#af52de']
+const ROOM_PASSWORD_DIGITS_ONLY = /^\d+$/
 const ROUTE_LOGOS = [
   '/wherego-logo.png',
   '/wherego-logo-orange.png',
@@ -83,6 +84,17 @@ function validateDisplayName(value, label) {
   if (!trimmed) return `${label}을 입력해주세요.`
   if (trimmed.length > MAX_NAME_LENGTH) return `${label}은 10자 이하로 입력해주세요.`
   if (hasBlockedWord(trimmed)) return `${label}에 사용할 수 없는 표현이 있습니다.`
+  return ''
+}
+
+function sanitizeRoomPassword(value) {
+  return String(value).replace(/\D/g, '')
+}
+
+function validateRoomPassword(value) {
+  const password = String(value).trim()
+  if (!password) return '방 비밀번호를 입력해주세요.'
+  if (!ROOM_PASSWORD_DIGITS_ONLY.test(password)) return '방 비밀번호는 숫자만 사용할 수 있어요.'
   return ''
 }
 
@@ -565,9 +577,11 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
     if (!form.roomName.trim() || !form.password.trim() || !form.username.trim()) return setError('방 이름, 비밀번호, 사용자 이름을 모두 입력해주세요.')
     const roomNameError = validateDisplayName(form.roomName, '방 이름')
     const usernameError = validateDisplayName(form.username, '사용자 이름')
-    if (roomNameError || usernameError) return setError(roomNameError || usernameError)
+    const passwordError = validateRoomPassword(form.password)
+    if (roomNameError || usernameError || passwordError) return setError(roomNameError || usernameError || passwordError)
+    const roomPassword = form.password.trim()
     setLoading(true)
-    const { data, error } = await withMinimumLoading(() => supabase.from('rooms').insert({ name: form.roomName.trim(), password: form.password, owner: form.username.trim() }).select().single())
+    const { data, error } = await withMinimumLoading(() => supabase.from('rooms').insert({ name: form.roomName.trim(), password: roomPassword, owner: form.username.trim() }).select().single())
     if (error) {
       setError(error.message)
       setLoading(false)
@@ -654,7 +668,7 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
       <p>친구와 함께 만들고 공유하는 실시간 여행 계획 서비스</p>
       <div className="tabs" role="tablist">
         <button className={mode === 'find' ? 'active' : ''} onClick={() => { setMode('find'); setError('') }}>방 찾기</button>
-        <button className={mode === 'create' ? 'active' : ''} disabled={isGuest} onClick={() => { setMode('create'); setError('') }}>방 만들기</button>
+        <button className={mode === 'create' ? 'active' : ''} disabled={isGuest} onClick={() => { setMode('create'); setError(''); setForm(prev => ({ ...prev, password: sanitizeRoomPassword(prev.password) })) }}>방 만들기</button>
       </div>
       {isGuest && <div className="guestNotice">게스트는 방 참가만 가능해요.</div>}
       <div className="formStack">
@@ -672,7 +686,7 @@ function Lobby({ setSession, authUser, onLogout, onRequireAuth }) {
           </div>}
         </div>}
         <label><span>사용자 이름</span><input maxLength={MAX_NAME_LENGTH} placeholder="수성" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} /></label>
-        <label><span>방 비밀번호</span><input placeholder="비밀번호" type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></label>
+        <label><span>방 비밀번호</span><input placeholder="비밀번호" type="password" inputMode={mode === 'create' ? 'numeric' : undefined} pattern={mode === 'create' ? '[0-9]*' : undefined} value={form.password} onChange={e => setForm({ ...form, password: mode === 'create' ? sanitizeRoomPassword(e.target.value) : e.target.value })} /></label>
       </div>
       {error && <div className="error">{error}</div>}
       <button className="primary" disabled={primaryDisabled} onClick={submitLobby}>{loading ? '준비 중...' : mode === 'create' ? '방 만들고 입장' : '입장하기'}</button>
@@ -1262,9 +1276,11 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
     if (isGuest) return setRoomError('게스트는 방 만들기를 할 수 없어요. 방 찾기로 참여해주세요.')
     if (!roomForm.roomName.trim() || !roomForm.password.trim()) return setRoomError('방 이름과 비밀번호를 입력해주세요.')
     const roomNameError = validateDisplayName(roomForm.roomName, '방 이름')
-    if (roomNameError) return setRoomError(roomNameError)
+    const passwordError = validateRoomPassword(roomForm.password)
+    if (roomNameError || passwordError) return setRoomError(roomNameError || passwordError)
+    const roomPassword = roomForm.password.trim()
     setRoomLoading(true)
-    const { data, error } = await withMinimumLoading(() => supabase.from('rooms').insert({ name: roomForm.roomName.trim(), password: roomForm.password, owner: session.username }).select().single())
+    const { data, error } = await withMinimumLoading(() => supabase.from('rooms').insert({ name: roomForm.roomName.trim(), password: roomPassword, owner: session.username }).select().single())
     if (error) {
       setRoomError(error.message)
       setRoomLoading(false)
@@ -2314,7 +2330,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
         </div>
         <div className="tabs compact" role="tablist">
           <button className={roomMode === 'find' ? 'active' : ''} onClick={() => { setRoomMode('find'); setRoomError('') }}>방 찾기</button>
-          <button className={roomMode === 'create' ? 'active' : ''} onClick={() => { setRoomMode('create'); setRoomError('') }}>방 만들기</button>
+          <button className={roomMode === 'create' ? 'active' : ''} onClick={() => { setRoomMode('create'); setRoomError(''); setRoomForm(prev => ({ ...prev, password: sanitizeRoomPassword(prev.password) })) }}>방 만들기</button>
         </div>
         {isGuest && roomMode === 'find' && <div className="guestNotice">게스트는 방 참가만 가능해요.</div>}
         {isGuest && roomMode === 'create' ? <div className="roomCreateLoginPanel">
@@ -2344,7 +2360,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
               </div>}
             </>}
             {roomMode === 'create' && <label><span>방 이름</span><input maxLength={MAX_NAME_LENGTH} placeholder="예: 제주 어디가" value={roomForm.roomName} onChange={e => setRoomForm({ ...roomForm, roomName: e.target.value })} /></label>}
-            <label><span>비밀번호</span><input placeholder="방 비밀번호" type="password" value={roomForm.password} onChange={e => setRoomForm({ ...roomForm, password: e.target.value })} /></label>
+            <label><span>비밀번호</span><input placeholder="방 비밀번호" type="password" inputMode={roomMode === 'create' ? 'numeric' : undefined} pattern={roomMode === 'create' ? '[0-9]*' : undefined} value={roomForm.password} onChange={e => setRoomForm({ ...roomForm, password: roomMode === 'create' ? sanitizeRoomPassword(e.target.value) : e.target.value })} /></label>
           </div>
           <button className="primary modalPrimary" disabled={roomLoading} onClick={() => roomMode === 'create' ? createRoomFromManager() : joinRoomFromManager(selectedJoinRoom)}>
             {roomLoading ? '처리 중...' : roomMode === 'create' ? '방 만들고 이동' : '방 입장하기'}
