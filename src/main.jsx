@@ -770,6 +770,7 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   const [noticeMode, setNoticeMode] = useState(false)
   const [noticeDetailOpen, setNoticeDetailOpen] = useState(false)
   const [membersOpen, setMembersOpen] = useState(false)
+  const [kickConfirmMember, setKickConfirmMember] = useState(null)
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [placeDeleteConfirmOpen, setPlaceDeleteConfirmOpen] = useState(false)
@@ -1827,8 +1828,22 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
   }
 
   async function kickMember(member) {
-    if (!isOwner || member.username === session.username) return
-    await supabase.from('room_members').delete().eq('room_id', session.roomId).eq('username', member.username)
+    if (!member || !isOwner || member.username === session.username) return
+    const { data, error } = await supabase
+      .from('room_members')
+      .delete()
+      .eq('room_id', session.roomId)
+      .eq('username', member.username)
+      .select('id')
+
+    if (error || !data?.length) {
+      setKickConfirmMember(null)
+      showLocationNotice('멤버를 내보내지 못했어요. Supabase room_members 삭제 정책을 확인해주세요.')
+      return
+    }
+
+    setMembers(prev => prev.filter(item => item.username !== member.username))
+    setKickConfirmMember(null)
     await supabase.from('messages').insert({
       room_id: session.roomId,
       username: '알림',
@@ -2398,10 +2413,20 @@ function Room({ session, setSession, authUser, onLogout, onOAuthLogin }) {
             {memberIsOwner && <em><Crown size={13} /> 방장</em>}
             {canManage && <div className="memberActions">
               <button onClick={() => transferOwner(m)} title="방장 넘기기"><Crown size={16} /></button>
-              <button className="danger" onClick={() => kickMember(m)} title="내보내기"><UserMinus size={16} /></button>
+              <button className="danger" onClick={() => setKickConfirmMember(m)} title="내보내기"><UserMinus size={16} /></button>
             </div>}
           </div>
         })}</div>
+      </div>
+    </div>}
+    {kickConfirmMember && <div className="modalBackdrop" onClick={() => setKickConfirmMember(null)}>
+      <div className="confirmModal" onClick={e => e.stopPropagation()}>
+        <b>멤버를 내보낼까요?</b>
+        <p>{kickConfirmMember.username}님은 이 방에서 나가고, 다시 들어오려면 초대 링크가 필요해요.</p>
+        <div>
+          <button onClick={() => setKickConfirmMember(null)}>취소</button>
+          <button className="destructive" onClick={() => kickMember(kickConfirmMember)}>내보내기</button>
+        </div>
       </div>
     </div>}
     {leaveConfirmOpen && <div className="modalBackdrop" onClick={() => setLeaveConfirmOpen(false)}>
